@@ -32,7 +32,7 @@ pipeline {
             echo 'Pipeline execution complete.'
         }
         success {
-            echo 'Deployment Successful! System is up and running at http://localhost'
+            echo "Deployment Successful! System is up and running."
         }
         failure {
             echo 'Deployment Failed. Check logs for details.'

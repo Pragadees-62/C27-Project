@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
   role: { type: String, enum: ['student', 'teacher'], required: true },
 });
 
 const TeacherSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
   department: { type: String, required: true }
 });
 
@@ -16,8 +16,7 @@ const Teacher = mongoose.models.Teacher || mongoose.model('Teacher', TeacherSche
 
 const StudentSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  username: { type: String, required: true },
-  email: { type: String, default: '' },
+  email: { type: String, required: true, unique: true },
   department: { type: String, default: '' },
   mentorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
   mentorName: { type: String, default: '' },
@@ -28,7 +27,7 @@ const Student = mongoose.models.Student || mongoose.model('Student', StudentSche
 
 const JoinRequestSchema = new mongoose.Schema({
   studentName: { type: String, required: true },
-  studentUsername: { type: String, required: true },
+  studentEmail: { type: String, required: true },
   department: { type: String, required: true },
   status: { type: String, default: 'pending' },
   requestedAt: { type: Date, default: Date.now }

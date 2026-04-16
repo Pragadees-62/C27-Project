@@ -157,15 +157,16 @@
 <script>
 // ── Auth guard ────────────────────────────────────────────────────────────────
 const role     = sessionStorage.getItem("role");
+const email = sessionStorage.getItem("email");
 const username = sessionStorage.getItem("username");
 
-if (!username) { window.location.replace("/"); }
+if (!email) { window.location.replace("/"); }
 if (role === "teacher") { window.location.replace("/teacher.html"); }
 
 document.getElementById("welcomeName").textContent = username || "Student";
 
 // ── Session data ──────────────────────────────────────────────────────────────
-const API        = "http://localhost:3000/api";
+const API        = "/api";
 const myDept     = sessionStorage.getItem("department") || "";
 let   studentId  = sessionStorage.getItem("studentId")  || null;
 let   mentorName = sessionStorage.getItem("mentorName") || "";
@@ -193,14 +194,14 @@ async function initSetup() {
 
   // Check existing request status on server
   try {
-    const statusRes = await fetch(`${API}/join-request-status?username=${encodeURIComponent(username)}`);
+    const statusRes = await fetch(`${API}/join-request-status?email=${encodeURIComponent(email)}`);
     const statusData = await statusRes.json();
 
     if (statusData.status === "accepted") {
       // Already accepted — find mentor info from students list
       const sRes  = await fetch(`${API}/students`);
       const sData = await sRes.json();
-      const me    = sData.find(s => s.username === username);
+      const me    = sData.find(s => s.email === email);
       if (me) {
         sessionStorage.setItem("studentId",  me.id);
         sessionStorage.setItem("mentorName", me.mentorName || "");
@@ -244,8 +245,8 @@ async function sendJoinRequest() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        studentName:     username,
-        studentUsername: username,
+        studentName:     username || email,
+        studentEmail:    email,
         department:      myDept,
       }),
     });
@@ -300,14 +301,14 @@ function pollJoinStatus() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
-      const res  = await fetch(`${API}/join-request-status?username=${encodeURIComponent(username)}`);
+      const res  = await fetch(`${API}/join-request-status?email=${encodeURIComponent(email)}`);
       const data = await res.json();
       if (data.status === "accepted") {
         clearInterval(pollTimer);
         // Fetch student record
         const sRes  = await fetch(`${API}/students`);
         const sData = await sRes.json();
-        const me    = sData.find(s => s.username === username);
+        const me    = sData.find(s => s.email === email);
         if (me) {
           sessionStorage.setItem("studentId",   me.id);
           sessionStorage.setItem("mentorName",  me.mentorName || "");

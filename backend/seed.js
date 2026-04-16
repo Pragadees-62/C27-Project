@@ -18,16 +18,16 @@ const seedData = async () => {
     console.log('Old Data Destroyed...');
 
     const teachers = [
-      { name: 'Mr. Smith', username: 'smith', department: 'CSE' },
-      { name: 'Ms. Johnson', username: 'johnson', department: 'ECE' },
-      { name: 'Mr. Brown', username: 'brown', department: 'IT' }
+      { name: 'Mr. Smith', email: 'smith@school.com', department: 'CSE' },
+      { name: 'Ms. Johnson', email: 'johnson@school.com', department: 'ECE' },
+      { name: 'Mr. Brown', email: 'brown@school.com', department: 'IT' }
     ];
     
     const createdTeachers = await Teacher.insertMany(teachers);
 
     const students = [
-      { name: 'Alice', username: 'alice', email: 'alice@school.com', department: 'CSE', mentorId: createdTeachers[0]._id, mentorName: 'Mr. Smith', status: 'accepted' },
-      { name: 'Bob', username: 'bob', email: 'bob@school.com', department: 'ECE', mentorId: createdTeachers[1]._id, mentorName: 'Ms. Johnson', status: 'accepted' }
+      { name: 'Alice', email: 'alice@school.com', department: 'CSE', mentorId: createdTeachers[0]._id, mentorName: 'Mr. Smith', status: 'accepted' },
+      { name: 'Bob', email: 'bob@school.com', department: 'ECE', mentorId: createdTeachers[1]._id, mentorName: 'Ms. Johnson', status: 'accepted' }
     ];
     
     await Student.insertMany(students);

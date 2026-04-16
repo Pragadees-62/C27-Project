@@ -252,8 +252,8 @@
       </div>
 
       <div class="field">
-        <label for="username">Username</label>
-        <input type="text" id="username" placeholder="Enter your username" autocomplete="username" autofocus />
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter your email" autocomplete="email" autofocus />
       </div>
 
       <div class="field">
@@ -324,7 +324,7 @@
 <script>
   // ── Constants ───────────────────────────────────────────────────────────────
   const TEACHER_CODE = "Teachers2026"; // Admin-set secret code for teacher registration
-  const API = "http://localhost:3000/api";
+  const API = "/api";
 
   // ── State ───────────────────────────────────────────────────────────────────
   let currentMode = "signin";   // "signin" | "register"
@@ -339,9 +339,9 @@
     localStorage.setItem("sms_users", JSON.stringify(users));
   }
 
-  function findUser(username, role) {
+  function findUser(email, role) {
     return getUsers().find(
-      u => u.username.toLowerCase() === username.toLowerCase() && u.role === role
+      u => u.email.toLowerCase() === email.toLowerCase() && u.role === role
     );
   }
 
@@ -409,7 +409,7 @@
     if (isRegister && currentRole === "student") loadTeachers();
 
     // Clear all inputs
-    ["fullname", "username", "password", "confirm", "teacher-secret"].forEach(id => {
+    ["fullname", "email", "password", "confirm", "teacher-secret"].forEach(id => {
       document.getElementById(id).value = "";
     });
     document.getElementById("student-dept").value = "";
@@ -446,21 +446,21 @@
     e.preventDefault();
     clearMsg();
 
-    const username = document.getElementById("username").value.trim();
+    const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
-    if (!username) { showMsg("Please enter a username.", "error"); return; }
+    if (!email) { showMsg("Please enter your email.", "error"); return; }
     if (!password) { showMsg("Please enter a password.", "error"); return; }
 
     if (currentMode === "register") {
-      register(username, password);
+      register(email, password);
     } else {
-      signIn(username, password);
+      signIn(email, password);
     }
   }
 
   // ── Register ────────────────────────────────────────────────────────────────
-  async function register(username, password) {
+  async function register(email, password) {
     const fullname = document.getElementById("fullname").value.trim();
     const confirm  = document.getElementById("confirm").value;
     const secret   = document.getElementById("teacher-secret").value;
@@ -487,10 +487,10 @@
 
     const users = getUsers();
     const exists = users.find(
-      u => u.username.toLowerCase() === username.toLowerCase() && u.role === currentRole
+      u => u.email.toLowerCase() === email.toLowerCase() && u.role === currentRole
     );
     if (exists) {
-      showMsg(`Username "${username}" is already taken for this role.`, "error");
+      showMsg(`Email "${email}" is already registered for this role.`, "error");
       return;
     }
 
@@ -503,24 +503,24 @@
         const res = await fetch(`${API}/teachers`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-Role": "teacher" },
-          body: JSON.stringify({ name: fullname, username, department: teacherDept }),
+          body: JSON.stringify({ name: fullname, email, department: teacherDept }),
         });
         if (res.ok) { const c = await res.json(); teacherId = c.id; }
       } catch { /* server offline — saved to localStorage only */ }
     }
 
-    users.push({ username, password, fullname, role: currentRole, subject: teacherDept, department: studentDept, teacherId });
+    users.push({ email, password, fullname, role: currentRole, subject: teacherDept, department: studentDept, teacherId });
     saveUsers(users);
     showMsg(`Account created! You can now sign in as ${currentRole}.`, "success");
     setTimeout(() => setMode("signin"), 1500);
   }
 
   // ── Sign In ─────────────────────────────────────────────────────────────────
-  function signIn(username, password) {
-    const user = findUser(username, currentRole);
+  function signIn(email, password) {
+    const user = findUser(email, currentRole);
 
     if (!user) {
-      showMsg(`No ${currentRole} account found with that username.`, "error");
+      showMsg(`No ${currentRole} account found with that email.`, "error");
       return;
     }
 
@@ -530,7 +530,8 @@
     }
 
     // Save session
-    sessionStorage.setItem("username", user.fullname || user.username);
+    sessionStorage.setItem("email", user.email);
+    sessionStorage.setItem("username", user.fullname || user.email);
     sessionStorage.setItem("role", user.role);
     if (user.subject)     sessionStorage.setItem("subject",     user.subject);     // teacher dept
     if (user.department)  sessionStorage.setItem("department",  user.department);  // student dept

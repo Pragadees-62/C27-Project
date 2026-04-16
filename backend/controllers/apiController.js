@@ -25,15 +25,15 @@ const requireTeacher = (req, res, next) => {
 const joinRequestController = {
   create: async (req, res) => {
     try {
-      const { studentName, studentUsername, department } = req.body;
+      const { studentName, studentEmail, department } = req.body;
       if (!studentName || !department) {
         return res.status(400).json({ error: "studentName and department required." });
       }
 
-      const existing = await JoinRequest.findOne({ studentUsername, status: 'pending' });
+      const existing = await JoinRequest.findOne({ studentEmail, status: 'pending' });
       if (existing) return res.status(200).json(formatDoc(existing));
 
-      const newRequest = new JoinRequest({ studentName, studentUsername, department });
+      const newRequest = new JoinRequest({ studentName, studentEmail, department });
       await newRequest.save();
 
       res.status(201).json(formatDoc(newRequest));
@@ -55,8 +55,8 @@ const joinRequestController = {
 
   getStatus: async (req, res) => {
     try {
-      const uname = req.query.username || "";
-      const request = await JoinRequest.findOne({ studentUsername: uname }).sort({ _id: -1 });
+      const uemail = req.query.email || "";
+      const request = await JoinRequest.findOne({ studentEmail: uemail }).sort({ _id: -1 });
       if (request) {
         res.status(200).json(formatDoc(request));
       } else {
@@ -83,7 +83,7 @@ const joinRequestController = {
         
         const newStudent = new Student({
           name: jr.studentName,
-          username: jr.studentUsername,
+          email: jr.studentEmail,
           department: jr.department,
           mentorId: teacher ? teacher._id : null,
           mentorName: teacher ? teacher.name : '',
@@ -125,8 +125,8 @@ const resourceController = (Model) => ({
     try {
       // Special check for teacher
       if (Model.modelName === 'Teacher') {
-        const existing = await Teacher.findOne({ username: req.body.username });
-        if (existing) return res.status(409).json({ error: "Username already exists." });
+        const existing = await Teacher.findOne({ email: req.body.email });
+        if (existing) return res.status(409).json({ error: "Email already exists." });
       }
       
       const item = new Model(req.body);

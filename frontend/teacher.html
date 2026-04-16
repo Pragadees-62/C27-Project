@@ -73,8 +73,7 @@
         <div class="form-grid">
           <input id="st-id"       type="number" placeholder="ID (for update)" />
           <input id="st-name"     type="text"   placeholder="Full name *" />
-          <input id="st-username" type="text"   placeholder="Username *" />
-          <input id="st-email"    type="email"  placeholder="Email" />
+          <input id="st-email"    type="email"  placeholder="Email Address *" />
           <select id="st-dept">
             <option value="">— Department —</option>
             <option value="CSE">CSE</option>
@@ -100,7 +99,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>#</th><th>Full Name</th><th>Username</th><th>Email</th><th>Dept</th><th>Mentor</th><th>Action</th></tr>
+              <tr><th>#</th><th>Full Name</th><th>Email</th><th>Dept</th><th>Mentor</th><th>Action</th></tr>
             </thead>
             <tbody id="students-tbody">
               <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div>Loading…</div></td></tr>
@@ -252,6 +251,7 @@
 <script>
 // ── Auth guard ────────────────────────────────────────────────────────────────
 const role      = sessionStorage.getItem("role");
+const email     = sessionStorage.getItem("email");
 const username  = sessionStorage.getItem("username");
 let   mySubject = sessionStorage.getItem("subject") || "";
 
@@ -262,7 +262,7 @@ if (role !== "teacher") {
 document.getElementById("welcomeName").textContent = username || "Teacher";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const API = "http://localhost:3000/api";
+const API = "/api";
 
 function headers() {
   return { "Content-Type": "application/json", "X-Role": "teacher" };
@@ -280,8 +280,8 @@ async function resolveTeacherDept() {
     // Match by full name or username
     const me = teachers.find(t =>
       t.name === username ||
-      t.username === username ||
-      t.username === (username || "").toLowerCase()
+      t.email === email ||
+      t.email === (email || "").toLowerCase()
     );
     if (me && me.department) {
       mySubject = me.department;
@@ -368,7 +368,6 @@ async function loadStudents() {
     <tr>
       <td>${s.id}</td>
       <td>${s.name}</td>
-      <td>${s.username}</td>
       <td>${s.email || "—"}</td>
       <td><span class="badge badge-blue">${s.department || "—"}</span></td>
       <td style="font-size:0.82rem;color:#718096;">${s.mentorName ? "👩‍🏫 " + s.mentorName : "—"}</td>
@@ -407,7 +406,7 @@ async function loadJoinRequests() {
                   padding:12px 0;border-bottom:1px solid #e2e8f0;gap:12px;flex-wrap:wrap;">
         <div>
           <strong>${r.studentName}</strong>
-          <span style="color:#718096;font-size:0.82rem;margin-left:8px;">@${r.studentUsername}</span>
+          <span style="color:#718096;font-size:0.82rem;margin-left:8px;">@${r.studentEmail}</span>
           <span class="badge badge-blue" style="margin-left:8px;">${r.department}</span>
           <div style="font-size:0.78rem;color:#a0aec0;margin-top:3px;">
             Requested: ${new Date(r.requestedAt).toLocaleString()}
@@ -438,26 +437,24 @@ async function handleJoinRequest(id, action) {
 
 async function addStudent() {
   const name     = document.getElementById("st-name").value.trim();
-  const username = document.getElementById("st-username").value.trim();
   const email    = document.getElementById("st-email").value.trim();
   const department = document.getElementById("st-dept").value;
 
-  if (!name || !username) { toast("Name and username are required.", "error"); return; }
+  if (!name || !email) { toast("Name and email are required.", "error"); return; }
 
   const res = await fetch(`${API}/students`, {
     method: "POST",
     headers: headers(),
-    body: JSON.stringify({ name, username, email, department }),
+    body: JSON.stringify({ name, email, department }),
   });
 
-  if (res.ok) { toast("Student added!"); loadStudents(); clearFields("st-id","st-name","st-username","st-email"); document.getElementById("st-dept").value = ""; }
+  if (res.ok) { toast("Student added!"); loadStudents(); clearFields("st-id","st-name","st-email"); document.getElementById("st-dept").value = ""; }
   else        { toast("Failed to add student.", "error"); }
 }
 
 async function updateStudent() {
   const id         = parseInt(document.getElementById("st-id").value);
   const name       = document.getElementById("st-name").value.trim();
-  const username   = document.getElementById("st-username").value.trim();
   const email      = document.getElementById("st-email").value.trim();
   const department = document.getElementById("st-dept").value;
 
@@ -466,10 +463,10 @@ async function updateStudent() {
   const res = await fetch(`${API}/students/${id}`, {
     method: "PUT",
     headers: headers(),
-    body: JSON.stringify({ name, username, email, department }),
+    body: JSON.stringify({ name, email, department }),
   });
 
-  if (res.ok) { toast("Student updated!"); loadStudents(); clearFields("st-id","st-name","st-username","st-email"); document.getElementById("st-dept").value = ""; }
+  if (res.ok) { toast("Student updated!"); loadStudents(); clearFields("st-id","st-name","st-email"); document.getElementById("st-dept").value = ""; }
   else        { toast("Update failed.", "error"); }
 }
 
