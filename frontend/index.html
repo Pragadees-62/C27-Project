@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Auth page extras ─────────────────────────────────────── */
+    .auth-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+    }
+
+    .auth-logo {
+      text-align: center;
+      font-size: 48px;
+      margin-bottom: 6px;
+    }
+
+    .auth-title {
+      text-align: center;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .auth-subtitle {
+      text-align: center;
+      color: #718096;
+      font-size: 0.88rem;
+      margin-bottom: 28px;
+    }
+
+    /* Mode toggle (Sign In / Register) */
+    .mode-toggle {
+      display: flex;
+      background: #f0f4f8;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+
+    .mode-toggle button {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #718096;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .mode-toggle button.active {
+      background: #fff;
+      color: #667eea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Role selector */
+    .role-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 14px 10px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .role-btn .role-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+    .role-btn .role-name { font-size: 0.85rem; font-weight: 700; color: #4a5568; }
+
+    .role-btn.selected-student {
+      border-color: #48bb78;
+      background: #f0fff4;
+    }
+
+    .role-btn.selected-student .role-name { color: #276749; }
+
+    .role-btn.selected-teacher {
+      border-color: #667eea;
+      background: #ebf4ff;
+    }
+
+    .role-btn.selected-teacher .role-name { color: #434190; }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 5px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #2d3748;
+    }
+
+    .field input:focus { border-color: #667eea; }
+
+    /* Teacher secret field — hidden by default */
+    #teacher-secret-field { display: none; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-submit:hover  { opacity: 0.9; }
+    .btn-submit:active { transform: scale(0.98); }
+
+    .divider {
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.82rem;
+      margin: 18px 0 14px;
+      position: relative;
+    }
+
+    .divider::before, .divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    .switch-mode {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #718096;
+      margin-top: 16px;
+    }
+
+    .switch-mode a {
+      color: #667eea;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .switch-mode a:hover { text-decoration: underline; }
+
+    /* Error / success messages */
+    .msg {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .msg.error   { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; display: block; }
+    .msg.success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ── Page loader ─────────────────────────────────────────────── -->
+<div id="page-loader">
+  <div class="loader-logo">🎓</div>
+  <div class="loader-spinner"></div>
+  <div class="loader-text">Loading…</div>
+</div>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <div class="auth-logo">🎓</div>
+    <h1 class="auth-title">Student Management</h1>
+    <p class="auth-subtitle" id="card-subtitle">Sign in to your account</p>
+
+    <!-- Sign In / Register toggle -->
+    <div class="mode-toggle">
+      <button class="active" id="btn-signin" onclick="setMode('signin')">Sign In</button>
+      <button id="btn-register" onclick="setMode('register')">Register</button>
+    </div>
+
+    <!-- Message box -->
+    <div class="msg" id="msg-box"></div>
+
+    <!-- Role selector -->
+    <div class="role-selector">
+      <div class="role-btn selected-student" id="role-student" onclick="selectRole('student')">
+        <span class="role-icon">🎓</span>
+        <span class="role-name">Student</span>
+      </div>
+      <div class="role-btn" id="role-teacher" onclick="selectRole('teacher')">
+        <span class="role-icon">👩‍🏫</span>
+        <span class="role-name">Teacher</span>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form onsubmit="handleSubmit(event)">
+
+      <!-- Register-only: full name -->
+      <div class="field" id="name-field" style="display:none;">
+        <label for="fullname">Full Name</label>
+        <input type="text" id="fullname" placeholder="e.g. Alice Johnson" autocomplete="name" />
+      </div>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username" autocomplete="username" autofocus />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+
+      <!-- Register-only: confirm password -->
+      <div class="field" id="confirm-field" style="display:none;">
+        <label for="confirm">Confirm Password</label>
+        <input type="password" id="confirm" placeholder="Re-enter your password" autocomplete="new-password" />
+      </div>
+
+      <!-- Student registration: department -->
+      <div class="field" id="student-dept-field" style="display:none;">
+        <label for="student-dept">Your Department</label>
+        <select id="student-dept" style="width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:9px;font-size:0.95rem;outline:none;color:#2d3748;">
+          <option value="">— Choose your department —</option>
+          <option value="CSE">CSE – Computer Science &amp; Engineering</option>
+          <option value="ECE">ECE – Electronics &amp; Communication</option>
+          <option value="IT">IT – Information Technology</option>
+          <option value="EEE">EEE – Electrical &amp; Electronics</option>
+          <option value="AIDS">AIDS – AI &amp; Data Science</option>
+          <option value="AIML">AIML – AI &amp; Machine Learning</option>
+          <option value="MECH">MECH – Mechanical Engineering</option>
+          <option value="CIVIL">CIVIL – Civil Engineering</option>
+          <option value="CHEM">CHEM – Chemical Engineering</option>
+          <option value="MBA">MBA – Business Administration</option>
+          <option value="MCA">MCA – Computer Applications</option>
+        </select>
+      </div>
+
+      <!-- Teacher registration: secret code -->
+      <div class="field" id="teacher-secret-field">
+        <label for="teacher-secret">Teacher Code <span style="color:#a0aec0;font-weight:400;">(provided by admin)</span></label>
+        <input type="password" id="teacher-secret" placeholder="Enter teacher code" />
+      </div>
+
+      <!-- Teacher registration: subject -->
+      <div class="field" id="teacher-subject-field" style="display:none;">
+        <label for="teacher-subject">Your Department</label>
+        <select id="teacher-subject" style="width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:9px;font-size:0.95rem;outline:none;color:#2d3748;">
+          <option value="">— Choose your department —</option>
+          <option value="CSE">CSE – Computer Science &amp; Engineering</option>
+          <option value="ECE">ECE – Electronics &amp; Communication</option>
+          <option value="IT">IT – Information Technology</option>
+          <option value="EEE">EEE – Electrical &amp; Electronics</option>
+          <option value="AIDS">AIDS – AI &amp; Data Science</option>
+          <option value="AIML">AIML – AI &amp; Machine Learning</option>
+          <option value="MECH">MECH – Mechanical Engineering</option>
+          <option value="CIVIL">CIVIL – Civil Engineering</option>
+          <option value="CHEM">CHEM – Chemical Engineering</option>
+          <option value="MBA">MBA – Business Administration</option>
+          <option value="MCA">MCA – Computer Applications</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Sign In →</button>
+    </form>
+
+    <p class="switch-mode" id="switch-text">
+      Don't have an account? <a onclick="setMode('register')">Register here</a>
+    </p>
+
+  </div>
+</div>
+
+<script>
+  // ── Constants ───────────────────────────────────────────────────────────────
+  const TEACHER_CODE = "Teachers2026"; // Admin-set secret code for teacher registration
+  const API = "http://localhost:3000/api";
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let currentMode = "signin";   // "signin" | "register"
+  let currentRole = "student";  // "student" | "teacher"
+
+  // ── User store (localStorage) ───────────────────────────────────────────────
+  function getUsers() {
+    return JSON.parse(localStorage.getItem("sms_users") || "[]");
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem("sms_users", JSON.stringify(users));
+  }
+
+  function findUser(username, role) {
+    return getUsers().find(
+      u => u.username.toLowerCase() === username.toLowerCase() && u.role === role
+    );
+  }
+
+  // ── UI helpers ──────────────────────────────────────────────────────────────
+  function showMsg(text, type) {
+    const el = document.getElementById("msg-box");
+    el.textContent = text;
+    el.className = `msg ${type}`;
+  }
+
+  function clearMsg() {
+    const el = document.getElementById("msg-box");
+    el.className = "msg";
+    el.textContent = "";
+  }
+
+  // ── Load teachers into mentor dropdown ──────────────────────────────────────
+  async function loadTeachers() {
+    const select = document.getElementById("mentor");
+    select.innerHTML = `<option value="">— Loading… —</option>`;
+    try {
+      const res = await fetch(`${API}/teachers`);
+      const teachers = await res.json();
+      if (!teachers.length) {
+        select.innerHTML = `<option value="">— No teachers registered yet —</option>`;
+        return;
+      }
+      select.innerHTML = `<option value="">— Choose your class mentor —</option>` +
+        teachers.map(t =>
+          `<option value="${t.id}">${t.name} · ${t.department || t.subject || ""}</option>`
+        ).join("");
+    } catch {
+      select.innerHTML = `<option value="">— Could not load teachers —</option>`;
+    }
+  }
+
+  // ── Mode: Sign In / Register ────────────────────────────────────────────────
+  function setMode(mode) {
+    currentMode = mode;
+    clearMsg();
+
+    const isRegister = mode === "register";
+
+    document.getElementById("btn-signin").classList.toggle("active", !isRegister);
+    document.getElementById("btn-register").classList.toggle("active", isRegister);
+
+    document.getElementById("card-subtitle").textContent =
+      isRegister ? "Create a new account" : "Sign in to your account";
+
+    document.getElementById("submit-btn").textContent =
+      isRegister ? "Register →" : "Sign In →";
+
+    document.getElementById("switch-text").innerHTML = isRegister
+      ? `Already have an account? <a onclick="setMode('signin')">Sign in</a>`
+      : `Don't have an account? <a onclick="setMode('register')">Register here</a>`;
+
+    // Show/hide register-only fields
+    document.getElementById("name-field").style.display    = isRegister ? "block" : "none";
+    document.getElementById("confirm-field").style.display = isRegister ? "block" : "none";
+
+    // Mentor + teacher secret visibility
+    updateFieldVisibility();
+
+    // Load teachers when switching to register as student
+    if (isRegister && currentRole === "student") loadTeachers();
+
+    // Clear all inputs
+    ["fullname", "username", "password", "confirm", "teacher-secret"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("student-dept").value = "";
+    document.getElementById("teacher-subject").value = "";
+  }
+
+  // ── Role selection ──────────────────────────────────────────────────────────
+  function selectRole(role) {
+    currentRole = role;
+    clearMsg();
+
+    document.getElementById("role-student").className =
+      "role-btn" + (role === "student" ? " selected-student" : "");
+    document.getElementById("role-teacher").className =
+      "role-btn" + (role === "teacher" ? " selected-teacher" : "");
+
+    updateFieldVisibility();
+
+    // Load teachers if switching to student + register mode
+    if (role === "student" && currentMode === "register") loadTeachers();
+  }
+  function updateFieldVisibility() {
+    const isRegister = currentMode === "register";
+    const isTeacher  = currentRole === "teacher";
+    const isStudent  = currentRole === "student";
+
+    document.getElementById("student-dept-field").style.display    = (isRegister && isStudent) ? "block" : "none";
+    document.getElementById("teacher-secret-field").style.display  = (isRegister && isTeacher) ? "block" : "none";
+    document.getElementById("teacher-subject-field").style.display = (isRegister && isTeacher) ? "block" : "none";
+  }
+
+  // ── Form submit ─────────────────────────────────────────────────────────────
+  function handleSubmit(e) {
+    e.preventDefault();
+    clearMsg();
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username) { showMsg("Please enter a username.", "error"); return; }
+    if (!password) { showMsg("Please enter a password.", "error"); return; }
+
+    if (currentMode === "register") {
+      register(username, password);
+    } else {
+      signIn(username, password);
+    }
+  }
+
+  // ── Register ────────────────────────────────────────────────────────────────
+  async function register(username, password) {
+    const fullname = document.getElementById("fullname").value.trim();
+    const confirm  = document.getElementById("confirm").value;
+    const secret   = document.getElementById("teacher-secret").value;
+
+    if (!fullname) { showMsg("Please enter your full name.", "error"); return; }
+    if (password.length < 4) { showMsg("Password must be at least 4 characters.", "error"); return; }
+    if (password !== confirm) { showMsg("Passwords do not match.", "error"); return; }
+
+    if (currentRole === "teacher") {
+      if (secret !== TEACHER_CODE) {
+        showMsg("Invalid teacher code. Contact your admin.", "error");
+        return;
+      }
+      const deptEl = document.getElementById("teacher-subject");
+      if (!deptEl.value) { showMsg("Please choose your department.", "error"); return; }
+    }
+
+    // Student must pick a department
+    let studentDept = "";
+    if (currentRole === "student") {
+      studentDept = document.getElementById("student-dept").value;
+      if (!studentDept) { showMsg("Please choose your department.", "error"); return; }
+    }
+
+    const users = getUsers();
+    const exists = users.find(
+      u => u.username.toLowerCase() === username.toLowerCase() && u.role === currentRole
+    );
+    if (exists) {
+      showMsg(`Username "${username}" is already taken for this role.`, "error");
+      return;
+    }
+
+    // For teachers: best-effort POST to server so students can pick them as mentor
+    let teacherDept = "";
+    let teacherId   = null;
+    if (currentRole === "teacher") {
+      teacherDept = document.getElementById("teacher-subject").value;
+      try {
+        const res = await fetch(`${API}/teachers`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Role": "teacher" },
+          body: JSON.stringify({ name: fullname, username, department: teacherDept }),
+        });
+        if (res.ok) { const c = await res.json(); teacherId = c.id; }
+      } catch { /* server offline — saved to localStorage only */ }
+    }
+
+    users.push({ username, password, fullname, role: currentRole, subject: teacherDept, department: studentDept, teacherId });
+    saveUsers(users);
+    showMsg(`Account created! You can now sign in as ${currentRole}.`, "success");
+    setTimeout(() => setMode("signin"), 1500);
+  }
+
+  // ── Sign In ─────────────────────────────────────────────────────────────────
+  function signIn(username, password) {
+    const user = findUser(username, currentRole);
+
+    if (!user) {
+      showMsg(`No ${currentRole} account found with that username.`, "error");
+      return;
+    }
+
+    if (user.password !== password) {
+      showMsg("Incorrect password. Please try again.", "error");
+      return;
+    }
+
+    // Save session
+    sessionStorage.setItem("username", user.fullname || user.username);
+    sessionStorage.setItem("role", user.role);
+    if (user.subject)     sessionStorage.setItem("subject",     user.subject);     // teacher dept
+    if (user.department)  sessionStorage.setItem("department",  user.department);  // student dept
+    if (user.teacherId)   sessionStorage.setItem("teacherId",   user.teacherId);
+
+    // Redirect
+    if (user.role === "teacher") {
+      window.location.href = "teacher.html";
+    } else {
+      window.location.href = "student.html";
+    }
+  }
+
+  // ── Hide loader once page is ready ──────────────────────────────────────────
+  window.addEventListener("load", () => {
+    document.getElementById("page-loader").classList.add("hidden");
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Portal – SMS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Page loader ─────────────────────────────────────────────── -->
+<div id="page-loader">
+  <div class="loader-logo">🎓</div>
+  <div class="loader-spinner"></div>
+  <div class="loader-text">Loading Student Portal…</div>
+</div>
+
+<!-- ── Join status banner ──────────────────────────────────────── -->
+<div id="join-banner" style="
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;
+              box-shadow:0 24px 64px rgba(0,0,0,0.25);text-align:center;">
+    <div id="banner-icon" style="font-size:52px;margin-bottom:12px;">⏳</div>
+    <h2 id="banner-title" style="font-size:1.3rem;font-weight:700;color:#2d3748;margin-bottom:8px;"></h2>
+    <p  id="banner-msg"   style="color:#718096;font-size:0.9rem;line-height:1.6;margin-bottom:24px;"></p>
+    <div id="banner-dept" style="display:inline-block;padding:6px 18px;border-radius:20px;
+         background:#ebf4ff;color:#434190;font-weight:700;font-size:0.9rem;margin-bottom:20px;"></div>
+    <br/>
+    <button id="banner-btn" onclick="dismissBanner()"
+      style="display:none;padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);
+             color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;">
+      Go to Dashboard →
+    </button>
+  </div>
+</div>
+
+<div class="dashboard">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="role-badge student-badge">🎓 Student</div>
+      <h2 id="welcomeName">Welcome!</h2>
+      <p id="mentorInfo" style="font-size:0.78rem;color:#a0aec0;margin-top:6px;line-height:1.4;"></p>
+    </div>
+
+    <nav>
+      <button class="active" onclick="showSection('marks', this)">
+        <span class="icon">📝</span> My Marks
+      </button>
+      <button onclick="showSection('attendance', this)">
+        <span class="icon">📋</span> Attendance
+      </button>
+      <button onclick="showSection('announcements', this)">
+        <span class="icon">📢</span> Announcements
+      </button>
+      <button onclick="showSection('fees', this)">
+        <span class="icon">💰</span> Fees
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ── Main content ─────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- MARKS -->
+    <section id="section-marks" class="section active">
+      <div class="section-header">
+        <h2>📝 My Marks</h2>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="marks-stats"></div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Student</th><th>Department</th><th>Score</th><th>Grade</th></tr>
+            </thead>
+            <tbody id="marks-tbody">
+              <tr><td colspan="5"><div class="empty"><div class="empty-icon">⏳</div>Loading…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ATTENDANCE -->
+    <section id="section-attendance" class="section">
+      <div class="section-header">
+        <h2>📋 Attendance</h2>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="attendance-stats"></div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Student</th><th>Date</th><th>Status</th></tr>
+            </thead>
+            <tbody id="attendance-tbody">
+              <tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div>Loading…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section id="section-announcements" class="section">
+      <div class="section-header">
+        <h2>📢 Announcements</h2>
+      </div>
+      <div id="announcements-list">
+        <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+      </div>
+    </section>
+
+    <!-- FEES -->
+    <section id="section-fees" class="section">
+      <div class="section-header">
+        <h2>💰 Fees</h2>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="fees-stats"></div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Student</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="fees-tbody">
+              <tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div>Loading…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+// ── Auth guard ────────────────────────────────────────────────────────────────
+const role     = sessionStorage.getItem("role");
+const username = sessionStorage.getItem("username");
+
+if (!username) { window.location.replace("/"); }
+if (role === "teacher") { window.location.replace("/teacher.html"); }
+
+document.getElementById("welcomeName").textContent = username || "Student";
+
+// ── Session data ──────────────────────────────────────────────────────────────
+const API        = "http://localhost:3000/api";
+const myDept     = sessionStorage.getItem("department") || "";
+let   studentId  = sessionStorage.getItem("studentId")  || null;
+let   mentorName = sessionStorage.getItem("mentorName") || "";
+
+// ── Sidebar info ──────────────────────────────────────────────────────────────
+function updateSidebarInfo() {
+  const el = document.getElementById("mentorInfo");
+  if (!el) return;
+  const parts = [];
+  if (studentId)  parts.push(`🪪 ID: #${studentId}`);
+  if (myDept)     parts.push(`🏛️ Dept: ${myDept}`);
+  if (mentorName) parts.push(`👩‍🏫 Mentor: ${mentorName}`);
+  el.innerHTML = parts.join("<br/>");
+}
+updateSidebarInfo();
+
+// ── Join request flow ─────────────────────────────────────────────────────────
+async function initSetup() {
+  // If already accepted this session, go straight to dashboard
+  if (sessionStorage.getItem("joinAccepted") === "yes") {
+    hideLoader();
+    loadMarks();
+    return;
+  }
+
+  // Check existing request status on server
+  try {
+    const statusRes = await fetch(`${API}/join-request-status?username=${encodeURIComponent(username)}`);
+    const statusData = await statusRes.json();
+
+    if (statusData.status === "accepted") {
+      // Already accepted — find mentor info from students list
+      const sRes  = await fetch(`${API}/students`);
+      const sData = await sRes.json();
+      const me    = sData.find(s => s.username === username);
+      if (me) {
+        sessionStorage.setItem("studentId",  me.id);
+        sessionStorage.setItem("mentorName", me.mentorName || "");
+        sessionStorage.setItem("joinAccepted", "yes");
+        mentorName = me.mentorName || "";
+        studentId  = me.id;
+        updateSidebarInfo();
+      }
+      hideLoader();
+      loadMarks();
+      return;
+    }
+
+    if (statusData.status === "rejected") {
+      showBanner("rejected");
+      hideLoader();
+      return;
+    }
+
+    if (statusData.status === "pending") {
+      showBanner("pending");
+      hideLoader();
+      // Poll every 5 seconds for acceptance
+      pollJoinStatus();
+      return;
+    }
+
+    // No request yet — send one now
+    await sendJoinRequest();
+
+  } catch {
+    // Server offline — show offline notice but still let them in
+    hideLoader();
+    loadMarks();
+  }
+}
+
+async function sendJoinRequest() {
+  try {
+    const res = await fetch(`${API}/join-request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentName:     username,
+        studentUsername: username,
+        department:      myDept,
+      }),
+    });
+    if (res.ok) {
+      showBanner("pending");
+      pollJoinStatus();
+    }
+  } catch {
+    hideLoader();
+    loadMarks();
+  }
+  hideLoader();
+}
+
+function showBanner(status) {
+  const banner = document.getElementById("join-banner");
+  const icon   = document.getElementById("banner-icon");
+  const title  = document.getElementById("banner-title");
+  const msg    = document.getElementById("banner-msg");
+  const dept   = document.getElementById("banner-dept");
+  const btn    = document.getElementById("banner-btn");
+
+  dept.textContent = myDept ? "🏛️ " + myDept + " Department" : "";
+
+  if (status === "pending") {
+    icon.textContent  = "⏳";
+    title.textContent = "Waiting for Approval";
+    msg.textContent   = "Your join request has been sent to your department teacher. Please wait for them to accept you. This page will update automatically.";
+    btn.style.display = "none";
+  } else if (status === "accepted") {
+    icon.textContent  = "✅";
+    title.textContent = "You've Been Accepted!";
+    msg.textContent   = `Welcome to the ${myDept} department! Your mentor has accepted your request. Click below to enter your dashboard.`;
+    btn.style.display = "inline-block";
+  } else if (status === "rejected") {
+    icon.textContent  = "❌";
+    title.textContent = "Request Rejected";
+    msg.textContent   = "Your join request was rejected. Please contact your department teacher or register again with the correct department.";
+    btn.style.display = "none";
+  }
+
+  banner.style.display = "flex";
+}
+
+function dismissBanner() {
+  document.getElementById("join-banner").style.display = "none";
+  loadMarks();
+}
+
+let pollTimer = null;
+function pollJoinStatus() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const res  = await fetch(`${API}/join-request-status?username=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      if (data.status === "accepted") {
+        clearInterval(pollTimer);
+        // Fetch student record
+        const sRes  = await fetch(`${API}/students`);
+        const sData = await sRes.json();
+        const me    = sData.find(s => s.username === username);
+        if (me) {
+          sessionStorage.setItem("studentId",   me.id);
+          sessionStorage.setItem("mentorName",  me.mentorName || "");
+          sessionStorage.setItem("joinAccepted","yes");
+          mentorName = me.mentorName || "";
+          studentId  = me.id;
+          updateSidebarInfo();
+        }
+        showBanner("accepted");
+      } else if (data.status === "rejected") {
+        clearInterval(pollTimer);
+        showBanner("rejected");
+      }
+    } catch { /* server offline — keep polling */ }
+  }, 5000);
+}
+
+function hideLoader() {
+  document.getElementById("page-loader").classList.add("hidden");
+}
+
+function headers() {
+  return { "Content-Type": "application/json", "X-Role": "student" };
+}
+
+function toast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  setTimeout(() => { el.className = ""; }, 3000);
+}
+
+function gradeLabel(score) {
+  if (score >= 90) return '<span class="badge badge-green">A</span>';
+  if (score >= 75) return '<span class="badge badge-blue">B</span>';
+  if (score >= 60) return '<span class="badge badge-yellow">C</span>';
+  return '<span class="badge badge-red">F</span>';
+}
+
+function statusBadge(status) {
+  const map = {
+    Present: "badge-green", Absent: "badge-red", Late: "badge-yellow",
+    Paid: "badge-green", Pending: "badge-yellow", Overdue: "badge-red",
+  };
+  return `<span class="badge ${map[status] || "badge-blue"}">${status}</span>`;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showSection(name, btn) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  document.getElementById(`section-${name}`).classList.add("active");
+  btn.classList.add("active");
+  loadSection(name);
+}
+
+function loadSection(name) {
+  const loaders = {
+    marks: loadMarks,
+    attendance: loadAttendance,
+    announcements: loadAnnouncements,
+    fees: loadFees,
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+function logout() {
+  sessionStorage.clear();
+  window.location.replace("/");
+}
+
+// ── MARKS ─────────────────────────────────────────────────────────────────────
+async function loadMarks() {
+  try {
+    const res  = await fetch(`${API}/marks`, { headers: headers() });
+    const data = await res.json();
+    const tbody = document.getElementById("marks-tbody");
+    const statsEl = document.getElementById("marks-stats");
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">📭</div>No marks recorded yet.</div></td></tr>`;
+      statsEl.innerHTML = "";
+      return;
+    }
+
+    // Stats
+    const avg = Math.round(data.reduce((s, m) => s + m.score, 0) / data.length);
+    const highest = Math.max(...data.map(m => m.score));
+    const lowest  = Math.min(...data.map(m => m.score));
+
+    statsEl.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">${avg}</div>
+        <div class="stat-label">Average Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value">${highest}</div>
+        <div class="stat-label">Highest Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📉</div>
+        <div class="stat-value">${lowest}</div>
+        <div class="stat-label">Lowest Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value">${data.length}</div>
+        <div class="stat-label">Total Subjects</div>
+      </div>
+    `;
+
+    tbody.innerHTML = data.map(m => `
+      <tr>
+        <td>${m.id}</td>
+        <td>${m.student}</td>
+        <td>${m.subject}</td>
+        <td><strong>${m.score}</strong></td>
+        <td>${gradeLabel(m.score)}</td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    toast("Failed to load marks.", "error");
+  }
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────────────────────────
+async function loadAttendance() {
+  try {
+    const res  = await fetch(`${API}/attendance`, { headers: headers() });
+    const data = await res.json();
+    const tbody = document.getElementById("attendance-tbody");
+    const statsEl = document.getElementById("attendance-stats");
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">📭</div>No attendance records yet.</div></td></tr>`;
+      statsEl.innerHTML = "";
+      return;
+    }
+
+    // Stats
+    const present = data.filter(a => a.status === "Present").length;
+    const absent  = data.filter(a => a.status === "Absent").length;
+    const late    = data.filter(a => a.status === "Late").length;
+    const pct     = Math.round((present / data.length) * 100);
+
+    statsEl.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">${present}</div>
+        <div class="stat-label">Present</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value">${absent}</div>
+        <div class="stat-label">Absent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value">${late}</div>
+        <div class="stat-label">Late</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-value">${pct}%</div>
+        <div class="stat-label">Attendance Rate</div>
+      </div>
+    `;
+
+    tbody.innerHTML = data.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td>${a.student}</td>
+        <td>${a.date}</td>
+        <td>${statusBadge(a.status)}</td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    toast("Failed to load attendance.", "error");
+  }
+}
+
+// ── ANNOUNCEMENTS ─────────────────────────────────────────────────────────────
+async function loadAnnouncements() {
+  try {
+    const res  = await fetch(`${API}/announcements`, { headers: headers() });
+    const data = await res.json();
+    const list = document.getElementById("announcements-list");
+
+    if (!data.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No announcements yet.</div>`;
+      return;
+    }
+
+    list.innerHTML = data.map(a => `
+      <div class="card" style="border-left: 4px solid #667eea;">
+        <strong style="font-size: 1rem;">${a.title}</strong>
+        <p style="color: #718096; margin-top: 8px; font-size: 0.9rem; line-height: 1.5;">${a.message}</p>
+        <small style="color: #a0aec0; margin-top: 8px; display: block;">Announcement #${a.id}</small>
+      </div>
+    `).join("");
+  } catch (err) {
+    toast("Failed to load announcements.", "error");
+  }
+}
+
+// ── FEES ──────────────────────────────────────────────────────────────────────
+async function loadFees() {
+  try {
+    const res  = await fetch(`${API}/fees`, { headers: headers() });
+    const data = await res.json();
+    const tbody = document.getElementById("fees-tbody");
+    const statsEl = document.getElementById("fees-stats");
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">📭</div>No fee records yet.</div></td></tr>`;
+      statsEl.innerHTML = "";
+      return;
+    }
+
+    // Stats
+    const totalDue  = data.filter(f => f.status !== "Paid").reduce((s, f) => s + f.amount, 0);
+    const totalPaid = data.filter(f => f.status === "Paid").reduce((s, f) => s + f.amount, 0);
+    const pending   = data.filter(f => f.status === "Pending").length;
+    const overdue   = data.filter(f => f.status === "Overdue").length;
+
+    statsEl.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">₹${totalPaid.toLocaleString()}</div>
+        <div class="stat-label">Total Paid</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">${pending}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-value">${overdue}</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💸</div>
+        <div class="stat-value">₹${totalDue.toLocaleString()}</div>
+        <div class="stat-label">Amount Due</div>
+      </div>
+    `;
+
+    tbody.innerHTML = data.map(f => `
+      <tr>
+        <td>${f.id}</td>
+        <td>${f.student}</td>
+        <td>₹${f.amount.toLocaleString()}</td>
+        <td>${statusBadge(f.status)}</td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    toast("Failed to load fees.", "error");
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initSetup();
+</script>
+
+</body>
+</html>
