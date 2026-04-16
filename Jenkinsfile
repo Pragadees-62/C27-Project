@@ -8,17 +8,8 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                // In a real scenario, this would be:
-                // git 'https://github.com/your-repo/student-management-system.git'
-                echo 'Skipping clone for local Jenkins execution, using workspace files.'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('backend') {
-                    sh 'npm install'
-                }
+                checkout scm
+                echo 'Repository cloned successfully.'
             }
         }
 
