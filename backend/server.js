@@ -18,8 +18,10 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api', require('./routes/apiRoutes'));
 
-// ── Fallback: serve index.html for any non-API route ─────────────────────────
-app.get(/^(?!\/api).*/, (req, res) => {
+// ── Fallback: serve index.html only for extensionless SPA routes ─────────────
+// express.static already handles /teacher.html, /student.html, /style.css etc.
+// This fallback only fires for routes like /dashboard, /profile (no extension)
+app.get(/^(?!\/api)(?!.*\.\w+$).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
