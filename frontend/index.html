@@ -28,10 +28,7 @@
       background: var(--dark);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      overflow-y: auto;
     }
 
     /* ── Animated background ── */
@@ -73,7 +70,12 @@
     .auth-wrap {
       position: relative; z-index: 1;
       width: 100%; max-width: 480px;
-      padding: 20px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .auth-card {
