@@ -1,9 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
-const {
-  User, Teacher, Student, JoinRequest,
-  Marks, Attendance, Announcement, Fees, fmt,
-} = require('../models');
+const { User, Teacher, Student, JoinRequest, Marks, Attendance, Announcement, Fees } = require('../models');
 
 const JWT_SECRET   = process.env.JWT_SECRET   || 'sms_secret';
 const TEACHER_CODE = process.env.TEACHER_CODE || 'Teachers2026';
@@ -17,16 +14,15 @@ const requireTeacher = (req, res, next) => {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const authCtrl = {
+
   register: async (req, res) => {
     try {
       const { fullname, email, password, role, department, teacherCode } = req.body;
 
       if (!fullname || !email || !password || !role)
         return res.status(400).json({ error: 'fullname, email, password and role are required.' });
-
       if (role === 'student' && !department)
         return res.status(400).json({ error: 'Department is required for students.' });
-
       if (role === 'teacher') {
         if (teacherCode !== TEACHER_CODE)
           return res.status(403).json({ error: 'Invalid teacher code.' });
@@ -34,34 +30,24 @@ const authCtrl = {
           return res.status(400).json({ error: 'Department is required for teachers.' });
       }
 
-      const existing = await User.findOne({ email: email.toLowerCase() });
+      const existing = await User.findByEmail(email);
       if (existing) return res.status(409).json({ error: 'Email already registered.' });
 
       const hashed = await bcrypt.hash(password, 10);
-      const user   = new User({ fullname, email: email.toLowerCase(), password: hashed, role, department });
-      await user.save();
+      const userRecord = { fullname, email: email.toLowerCase(), password: hashed, role, department, createdAt: new Date().toISOString() };
 
-      // If teacher → create Teacher profile so students can find them
       let teacherId = null;
       if (role === 'teacher') {
-        const existing = await Teacher.findOne({ email: email.toLowerCase() });
-        if (!existing) {
-          const t = new Teacher({ name: fullname, email: email.toLowerCase(), department });
-          await t.save();
-          teacherId = t._id.toString();
-        } else {
-          teacherId = existing._id.toString();
-        }
-        user.teacherId = teacherId;
-        await user.save();
+        let t = await Teacher.findByEmail(email);
+        if (!t) t = await Teacher.create({ name: fullname, email, department });
+        teacherId = t.id;
+        userRecord.teacherId = teacherId;
       }
 
-      const token = jwt.sign({ id: user._id, role, email: user.email, department }, JWT_SECRET, { expiresIn: '7d' });
+      await User.create(userRecord);
 
-      res.status(201).json({
-        token,
-        user: { id: user._id, fullname, email: user.email, role, department, teacherId },
-      });
+      const token = jwt.sign({ email: userRecord.email, role, department }, JWT_SECRET, { expiresIn: '7d' });
+      res.status(201).json({ token, user: { fullname, email: userRecord.email, role, department, teacherId } });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -73,42 +59,30 @@ const authCtrl = {
       if (!email || !password || !role)
         return res.status(400).json({ error: 'email, password and role are required.' });
 
-      const user = await User.findOne({ email: email.toLowerCase(), role });
-      if (!user) return res.status(401).json({ error: `No ${role} account found with that email.` });
+      const user = await User.findByEmail(email);
+      if (!user || user.role !== role)
+        return res.status(401).json({ error: `No ${role} account found with that email.` });
 
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(401).json({ error: 'Incorrect password.' });
 
-      const token = jwt.sign(
-        { id: user._id, role: user.role, email: user.email, department: user.department },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
+      const token = jwt.sign({ email: user.email, role: user.role, department: user.department }, JWT_SECRET, { expiresIn: '7d' });
       res.status(200).json({
         token,
-        user: {
-          id:         user._id,
-          fullname:   user.fullname,
-          email:      user.email,
-          role:       user.role,
-          department: user.department,
-          teacherId:  user.teacherId,
-        },
+        user: { fullname: user.fullname, email: user.email, role: user.role, department: user.department, teacherId: user.teacherId || null },
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   },
 
-  // Delete own account (called by student after rejection)
   deleteAccount: async (req, res) => {
     try {
       const { email } = req.body;
       if (!email) return res.status(400).json({ error: 'email required.' });
-      await User.findOneAndDelete({ email: email.toLowerCase() });
-      await Student.findOneAndDelete({ email: email.toLowerCase() });
-      await JoinRequest.deleteMany({ studentEmail: email.toLowerCase() });
+      await User.deleteByEmail(email);
+      await Student.deleteByEmail(email);
+      await JoinRequest.deleteByEmail(email);
       res.status(200).json({ message: 'Account deleted.' });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -118,18 +92,20 @@ const authCtrl = {
 
 // ── Join Requests ─────────────────────────────────────────────────────────────
 const joinCtrl = {
+
   create: async (req, res) => {
     try {
       const { studentName, studentEmail, department } = req.body;
       if (!studentName || !studentEmail || !department)
         return res.status(400).json({ error: 'studentName, studentEmail and department required.' });
 
-      const existing = await JoinRequest.findOne({ studentEmail: studentEmail.toLowerCase(), status: 'pending' });
-      if (existing) return res.status(200).json(fmt(existing));
+      // Check for existing pending request
+      const existing = await JoinRequest.findByEmail(studentEmail);
+      const pending   = existing.find(r => r.status === 'pending');
+      if (pending) return res.status(200).json(pending);
 
-      const jr = new JoinRequest({ studentName, studentEmail: studentEmail.toLowerCase(), department });
-      await jr.save();
-      res.status(201).json(fmt(jr));
+      const jr = await JoinRequest.create({ studentName, studentEmail, department, status: 'pending' });
+      res.status(201).json(jr);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -137,10 +113,13 @@ const joinCtrl = {
 
   getAll: async (req, res) => {
     try {
-      const dept  = req.query.department || '';
-      const query = dept ? { department: dept } : {};
-      const list  = await JoinRequest.find(query).sort({ requestedAt: -1 });
-      res.status(200).json(list.map(fmt));
+      const dept = req.query.department || '';
+      const list = dept
+        ? await JoinRequest.findByDept(dept)
+        : await JoinRequest.findAll();
+      // Sort newest first
+      list.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
+      res.status(200).json(list);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -149,8 +128,9 @@ const joinCtrl = {
   getStatus: async (req, res) => {
     try {
       const email = (req.query.email || '').toLowerCase();
-      const jr    = await JoinRequest.findOne({ studentEmail: email }).sort({ requestedAt: -1 });
-      res.status(200).json(jr ? fmt(jr) : { status: 'none' });
+      const list  = await JoinRequest.findByEmail(email);
+      list.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
+      res.status(200).json(list[0] || { status: 'none' });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -163,38 +143,36 @@ const joinCtrl = {
 
       const { action } = req.body;
       if (action === 'accept') {
-        jr.status = 'accepted';
-        await jr.save();
+        await JoinRequest.update(jr.id, { status: 'accepted' });
 
-        const teacher = await Teacher.findOne({ department: jr.department });
+        const teachers = await Teacher.findByDept(jr.department);
+        const teacher  = teachers[0] || null;
 
-        // Upsert student profile
-        let student = await Student.findOne({ email: jr.studentEmail });
+        let student = await Student.findByEmail(jr.studentEmail);
         if (!student) {
-          student = new Student({
+          student = await Student.create({
             name:       jr.studentName,
             email:      jr.studentEmail,
             department: jr.department,
-            mentorId:   teacher ? teacher._id : null,
+            mentorId:   teacher ? teacher.id   : null,
             mentorName: teacher ? teacher.name : '',
             status:     'accepted',
           });
         } else {
-          student.status     = 'accepted';
-          student.mentorId   = teacher ? teacher._id : student.mentorId;
-          student.mentorName = teacher ? teacher.name : student.mentorName;
+          await Student.update(student.id, {
+            ...student,
+            status:     'accepted',
+            mentorId:   teacher ? teacher.id   : student.mentorId,
+            mentorName: teacher ? teacher.name : student.mentorName,
+          });
+          student = await Student.findById(student.id);
         }
-        await student.save();
 
-        res.status(200).json({ status: 'accepted', student: fmt(student) });
+        res.status(200).json({ status: 'accepted', student });
       } else {
-        // Reject: mark request, delete student User account and Student profile
-        jr.status = 'rejected';
-        await jr.save();
-
-        await User.findOneAndDelete({ email: jr.studentEmail, role: 'student' });
-        await Student.findOneAndDelete({ email: jr.studentEmail });
-
+        await JoinRequest.update(jr.id, { status: 'rejected' });
+        await User.deleteByEmail(jr.studentEmail);
+        await Student.deleteByEmail(jr.studentEmail);
         res.status(200).json({ status: 'rejected' });
       }
     } catch (err) {
@@ -203,52 +181,64 @@ const joinCtrl = {
   },
 };
 
-// ── Generic resource CRUD ─────────────────────────────────────────────────────
-const crud = (Model) => ({
+// ── Generic CRUD controller factory ──────────────────────────────────────────
+const crudCtrl = (Model) => ({
   getAll: async (req, res) => {
     try {
-      const items = await Model.find().sort({ _id: -1 });
-      res.status(200).json(items.map(fmt));
+      const items = await Model.findAll();
+      items.sort((a, b) => (b.createdAt || b.id || '').localeCompare(a.createdAt || a.id || ''));
+      res.status(200).json(items);
     } catch (err) { res.status(500).json({ error: err.message }); }
   },
   getOne: async (req, res) => {
     try {
       const item = await Model.findById(req.params.id);
       if (!item) return res.status(404).json({ error: 'Not found.' });
-      res.status(200).json(fmt(item));
+      res.status(200).json(item);
     } catch (err) { res.status(500).json({ error: err.message }); }
   },
   create: async (req, res) => {
     try {
-      const item = new Model(req.body);
-      await item.save();
-      res.status(201).json(fmt(item));
+      const item = await Model.create(req.body);
+      res.status(201).json(item);
     } catch (err) { res.status(500).json({ error: err.message }); }
   },
   update: async (req, res) => {
     try {
-      const item = await Model.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const item = await Model.update(req.params.id, req.body);
       if (!item) return res.status(404).json({ error: 'Not found.' });
-      res.status(200).json(fmt(item));
+      res.status(200).json(item);
     } catch (err) { res.status(500).json({ error: err.message }); }
   },
   remove: async (req, res) => {
     try {
-      const item = await Model.findByIdAndDelete(req.params.id);
-      if (!item) return res.status(404).json({ error: 'Not found.' });
-      res.status(200).json({ message: 'Deleted.', item: fmt(item) });
+      const existing = await Model.findById(req.params.id);
+      if (!existing) return res.status(404).json({ error: 'Not found.' });
+      await Model.deleteById(req.params.id);
+      res.status(200).json({ message: 'Deleted.', item: existing });
     } catch (err) { res.status(500).json({ error: err.message }); }
   },
 });
+
+// ── Teachers getAll — also includes GSI query by dept ────────────────────────
+const teachersCtrl = {
+  ...crudCtrl(Teacher),
+  getAll: async (req, res) => {
+    try {
+      const items = await Teacher.findAll();
+      res.status(200).json(items);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  },
+};
 
 module.exports = {
   requireTeacher,
   authCtrl,
   joinCtrl,
-  teachersCtrl:      crud(Teacher),
-  studentsCtrl:      crud(Student),
-  marksCtrl:         crud(Marks),
-  announcementsCtrl: crud(Announcement),
-  attendanceCtrl:    crud(Attendance),
-  feesCtrl:          crud(Fees),
+  teachersCtrl,
+  studentsCtrl:      crudCtrl(Student),
+  marksCtrl:         crudCtrl(Marks),
+  announcementsCtrl: crudCtrl(Announcement),
+  attendanceCtrl:    crudCtrl(Attendance),
+  feesCtrl:          crudCtrl(Fees),
 };

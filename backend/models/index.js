@@ -1,86 +1,132 @@
-const mongoose = require('mongoose');
+/**
+ * DynamoDB helper layer — replaces Mongoose models.
+ * Each function maps to a DynamoDB operation using the DocumentClient.
+ */
+const { v4: uuidv4 }  = require('uuid');
+const {
+  PutCommand, GetCommand, DeleteCommand,
+  ScanCommand, QueryCommand, UpdateCommand,
+} = require('@aws-sdk/lib-dynamodb');
+const { db, TABLES } = require('../config/db');
 
-// ── User (auth) ───────────────────────────────────────────────────────────────
-const UserSchema = new mongoose.Schema({
-  fullname:   { type: String, required: true },
-  email:      { type: String, required: true, unique: true, lowercase: true },
-  password:   { type: String, required: true },
-  role:       { type: String, enum: ['student', 'teacher'], required: true },
-  department: { type: String, default: '' },   // student dept OR teacher dept
-  teacherId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
-  createdAt:  { type: Date, default: Date.now },
-});
+// ── Generic helpers ───────────────────────────────────────────────────────────
 
-// ── Teacher profile ───────────────────────────────────────────────────────────
-const TeacherSchema = new mongoose.Schema({
-  name:       { type: String, required: true },
-  email:      { type: String, required: true, unique: true, lowercase: true },
-  department: { type: String, required: true },
-});
-
-// ── Student profile ───────────────────────────────────────────────────────────
-const StudentSchema = new mongoose.Schema({
-  name:       { type: String, required: true },
-  email:      { type: String, required: true, unique: true, lowercase: true },
-  department: { type: String, default: '' },
-  mentorId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
-  mentorName: { type: String, default: '' },
-  status:     { type: String, enum: ['pending','accepted','rejected'], default: 'accepted' },
-});
-
-// ── Join Request ──────────────────────────────────────────────────────────────
-const JoinRequestSchema = new mongoose.Schema({
-  studentName:  { type: String, required: true },
-  studentEmail: { type: String, required: true, lowercase: true },
-  department:   { type: String, required: true },
-  status:       { type: String, enum: ['pending','accepted','rejected'], default: 'pending' },
-  requestedAt:  { type: Date, default: Date.now },
-});
-
-// ── Academic data ─────────────────────────────────────────────────────────────
-const MarksSchema = new mongoose.Schema({
-  student: { type: String, required: true },
-  subject: { type: String, required: true },
-  score:   { type: Number, required: true, min: 0, max: 100 },
-});
-
-const AttendanceSchema = new mongoose.Schema({
-  student: { type: String, required: true },
-  date:    { type: String, required: true },
-  status:  { type: String, enum: ['Present','Absent','Late'], default: 'Present' },
-  department: { type: String, default: '' },
-});
-
-const AnnouncementSchema = new mongoose.Schema({
-  title:     { type: String, required: true },
-  message:   { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const FeesSchema = new mongoose.Schema({
-  student:    { type: String, required: true },
-  amount:     { type: Number, required: true, min: 0 },
-  status:     { type: String, enum: ['Pending','Paid','Overdue'], default: 'Pending' },
-  department: { type: String, default: '' },
-});
-
-const fmt = (doc) => {
-  if (!doc) return null;
-  const obj = doc.toObject ? doc.toObject() : { ...doc };
-  obj.id = obj._id?.toString();
-  delete obj._id;
-  delete obj.__v;
-  return obj;
+/** Scan entire table (use sparingly — no pagination for simplicity) */
+const scanAll = async (TableName, FilterExpression, ExpressionAttributeValues, ExpressionAttributeNames) => {
+  const params = { TableName };
+  if (FilterExpression)        params.FilterExpression        = FilterExpression;
+  if (ExpressionAttributeValues) params.ExpressionAttributeValues = ExpressionAttributeValues;
+  if (ExpressionAttributeNames)  params.ExpressionAttributeNames  = ExpressionAttributeNames;
+  const result = await db.send(new ScanCommand(params));
+  return result.Items || [];
 };
 
-module.exports = {
-  User:         mongoose.models.User         || mongoose.model('User',         UserSchema),
-  Teacher:      mongoose.models.Teacher      || mongoose.model('Teacher',      TeacherSchema),
-  Student:      mongoose.models.Student      || mongoose.model('Student',      StudentSchema),
-  JoinRequest:  mongoose.models.JoinRequest  || mongoose.model('JoinRequest',  JoinRequestSchema),
-  Marks:        mongoose.models.Marks        || mongoose.model('Marks',        MarksSchema),
-  Attendance:   mongoose.models.Attendance   || mongoose.model('Attendance',   AttendanceSchema),
-  Announcement: mongoose.models.Announcement || mongoose.model('Announcement', AnnouncementSchema),
-  Fees:         mongoose.models.Fees         || mongoose.model('Fees',         FeesSchema),
-  fmt,
+/** Get item by primary key (hash key = 'id') */
+const getById = async (TableName, id) => {
+  const result = await db.send(new GetCommand({ TableName, Key: { id } }));
+  return result.Item || null;
 };
+
+/** Put (create/replace) item */
+const putItem = async (TableName, item) => {
+  await db.send(new PutCommand({ TableName, Item: item }));
+  return item;
+};
+
+/** Delete item by id */
+const deleteById = async (TableName, id) => {
+  await db.send(new DeleteCommand({ TableName, Key: { id } }));
+};
+
+/** Query a GSI */
+const queryGSI = async (TableName, IndexName, keyName, keyValue) => {
+  const result = await db.send(new QueryCommand({
+    TableName,
+    IndexName,
+    KeyConditionExpression: '#k = :v',
+    ExpressionAttributeNames:  { '#k': keyName },
+    ExpressionAttributeValues: { ':v': keyValue },
+  }));
+  return result.Items || [];
+};
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+const User = {
+  findByEmail: (email) => getById(TABLES.USERS, email.toLowerCase()),
+  create: (data) => putItem(TABLES.USERS, { ...data, email: data.email.toLowerCase() }),
+  update: (email, updates) => putItem(TABLES.USERS, { ...updates, email: email.toLowerCase() }),
+  deleteByEmail: (email) => db.send(new DeleteCommand({ TableName: TABLES.USERS, Key: { email: email.toLowerCase() } })),
+};
+
+// ── Teachers ──────────────────────────────────────────────────────────────────
+const Teacher = {
+  findAll:       ()     => scanAll(TABLES.TEACHERS),
+  findById:      (id)   => getById(TABLES.TEACHERS, id),
+  findByEmail:   (email) => queryGSI(TABLES.TEACHERS, 'email-index', 'email', email.toLowerCase()).then(r => r[0] || null),
+  findByDept:    (dept)  => queryGSI(TABLES.TEACHERS, 'department-index', 'department', dept),
+  create: (data) => {
+    const item = { id: uuidv4(), ...data, email: data.email.toLowerCase() };
+    return putItem(TABLES.TEACHERS, item);
+  },
+  update: (id, data) => putItem(TABLES.TEACHERS, { id, ...data }),
+  deleteById: (id) => deleteById(TABLES.TEACHERS, id),
+};
+
+// ── Students ──────────────────────────────────────────────────────────────────
+const Student = {
+  findAll:     ()      => scanAll(TABLES.STUDENTS),
+  findById:    (id)    => getById(TABLES.STUDENTS, id),
+  findByEmail: (email) => queryGSI(TABLES.STUDENTS, 'email-index', 'email', email.toLowerCase()).then(r => r[0] || null),
+  create: (data) => {
+    const item = { id: uuidv4(), ...data, email: data.email.toLowerCase() };
+    return putItem(TABLES.STUDENTS, item);
+  },
+  update: (id, data) => putItem(TABLES.STUDENTS, { id, ...data }),
+  deleteById:    (id)    => deleteById(TABLES.STUDENTS, id),
+  deleteByEmail: (email) => Student.findByEmail(email).then(s => s ? deleteById(TABLES.STUDENTS, s.id) : null),
+};
+
+// ── Join Requests ─────────────────────────────────────────────────────────────
+const JoinRequest = {
+  findAll:        ()     => scanAll(TABLES.JOIN_REQUESTS),
+  findById:       (id)   => getById(TABLES.JOIN_REQUESTS, id),
+  findByEmail:    (email) => queryGSI(TABLES.JOIN_REQUESTS, 'studentEmail-index', 'studentEmail', email.toLowerCase()),
+  findByDept:     (dept)  => scanAll(
+    TABLES.JOIN_REQUESTS,
+    '#d = :d',
+    { ':d': dept },
+    { '#d': 'department' }
+  ),
+  create: (data) => {
+    const item = { id: uuidv4(), ...data, studentEmail: data.studentEmail.toLowerCase(), requestedAt: new Date().toISOString() };
+    return putItem(TABLES.JOIN_REQUESTS, item);
+  },
+  update: (id, updates) => getById(TABLES.JOIN_REQUESTS, id).then(existing => putItem(TABLES.JOIN_REQUESTS, { ...existing, ...updates })),
+  deleteByEmail: async (email) => {
+    const items = await JoinRequest.findByEmail(email);
+    await Promise.all(items.map(i => deleteById(TABLES.JOIN_REQUESTS, i.id)));
+  },
+};
+
+// ── Generic CRUD factory for Marks, Attendance, Announcements, Fees ───────────
+const makeTable = (tableName) => ({
+  findAll:    ()   => scanAll(tableName),
+  findById:   (id) => getById(tableName, id),
+  create: (data) => {
+    const item = { id: uuidv4(), ...data };
+    return putItem(tableName, item);
+  },
+  update: async (id, data) => {
+    const existing = await getById(tableName, id);
+    if (!existing) return null;
+    return putItem(tableName, { ...existing, ...data, id });
+  },
+  deleteById: (id) => deleteById(tableName, id),
+});
+
+const Marks        = makeTable(TABLES.MARKS);
+const Attendance   = makeTable(TABLES.ATTENDANCE);
+const Announcement = makeTable(TABLES.ANNOUNCEMENTS);
+const Fees         = makeTable(TABLES.FEES);
+
+module.exports = { User, Teacher, Student, JoinRequest, Marks, Attendance, Announcement, Fees };

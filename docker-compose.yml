@@ -1,20 +1,5 @@
 services:
 
-  mongodb:
-    image: mongo:7
-    container_name: sms-mongodb
-    restart: unless-stopped
-    # No host port binding — only accessible inside Docker network
-    expose:
-      - "27017"
-    volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -24,13 +9,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=mongodb://sms-mongodb:27017/sms
       - PORT=3000
       - JWT_SECRET=sms_super_secret_key_2026
       - TEACHER_CODE=Teachers2026
-    depends_on:
-      mongodb:
-        condition: service_healthy
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - TABLE_PREFIX=${TABLE_PREFIX:-sms}
+    # EC2 IAM Role credentials are picked up automatically from instance metadata
+    # No AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY needed
 
   frontend:
     build:
@@ -42,6 +27,3 @@ services:
       - "80:80"
     depends_on:
       - backend
-
-volumes:
-  mongo-data:

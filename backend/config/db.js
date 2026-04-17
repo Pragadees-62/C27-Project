@@ -1,23 +1,37 @@
-const mongoose = require('mongoose');
+const { DynamoDBClient }          = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient }  = require('@aws-sdk/lib-dynamodb');
 
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sms');
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+const region = process.env.AWS_REGION || 'ap-south-1';
 
-    // Drop stale indexes that no longer exist in the schema.
-    // The old schema had a unique index on "username" — drop it if it still exists.
-    try {
-      await conn.connection.collection('users').dropIndex('username_1');
-      console.log('Dropped stale index: username_1');
-    } catch (e) {
-      // Index doesn't exist — nothing to do
-    }
+// If running locally with LocalStack or DynamoDB Local, set DYNAMO_ENDPOINT
+const clientConfig = { region };
+if (process.env.DYNAMO_ENDPOINT) {
+  clientConfig.endpoint = process.env.DYNAMO_ENDPOINT;
+  clientConfig.credentials = {
+    accessKeyId:     process.env.AWS_ACCESS_KEY_ID     || 'local',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'local',
+  };
+}
 
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
-  }
+const raw = new DynamoDBClient(clientConfig);
+const db  = DynamoDBDocumentClient.from(raw, {
+  marshallOptions:   { removeUndefinedValues: true },
+  unmarshallOptions: { wrapNumbers: false },
+});
+
+// Table name helpers — prefix from env (default: sms)
+const P = process.env.TABLE_PREFIX || 'sms';
+const TABLES = {
+  USERS:         `${P}-users`,
+  TEACHERS:      `${P}-teachers`,
+  STUDENTS:      `${P}-students`,
+  JOIN_REQUESTS: `${P}-join-requests`,
+  MARKS:         `${P}-marks`,
+  ATTENDANCE:    `${P}-attendance`,
+  ANNOUNCEMENTS: `${P}-announcements`,
+  FEES:          `${P}-fees`,
 };
 
-module.exports = connectDB;
+console.log(`✅  DynamoDB connected → region: ${region}`);
+
+module.exports = { db, TABLES };
