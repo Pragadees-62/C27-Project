@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         COMPOSE_PROJECT_NAME = 'eduprime-sms'
-        DOCKER_BUILDKIT      = '1'
     }
 
     triggers {
@@ -21,15 +20,15 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh 'docker compose build --no-cache'
+                sh 'docker-compose build'
                 echo '✅ Docker images built.'
             }
         }
 
         stage('Deploy Containers') {
             steps {
-                sh 'docker compose down --remove-orphans'
-                sh 'docker compose up -d'
+                sh 'docker-compose down --remove-orphans'
+                sh 'docker-compose up -d'
                 echo '✅ Containers started.'
             }
         }
@@ -54,7 +53,7 @@ pipeline {
         }
         failure {
             echo '❌ Pipeline failed. Check the logs above.'
-            sh 'docker compose down || true'
+            sh 'docker-compose down || true'
         }
         always {
             sh 'docker image prune -f || true'
