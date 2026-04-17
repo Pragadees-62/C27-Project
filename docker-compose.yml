@@ -4,8 +4,9 @@ services:
     image: mongo:7
     container_name: sms-mongodb
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    # No host port binding — only accessible inside Docker network
+    expose:
+      - "27017"
     volumes:
       - mongo-data:/data/db
     healthcheck:
