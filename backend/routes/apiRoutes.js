@@ -9,6 +9,7 @@ const {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 router.post('/auth/register', authCtrl.register);
 router.post('/auth/login',    authCtrl.login);
+router.delete('/auth/account', authCtrl.deleteAccount);
 
 // ── Join Requests ─────────────────────────────────────────────────────────────
 router.post('/join-request',        joinCtrl.create);

@@ -100,6 +100,20 @@ const authCtrl = {
       res.status(500).json({ error: err.message });
     }
   },
+
+  // Delete own account (called by student after rejection)
+  deleteAccount: async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'email required.' });
+      await User.findOneAndDelete({ email: email.toLowerCase() });
+      await Student.findOneAndDelete({ email: email.toLowerCase() });
+      await JoinRequest.deleteMany({ studentEmail: email.toLowerCase() });
+      res.status(200).json({ message: 'Account deleted.' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 };
 
 // ── Join Requests ─────────────────────────────────────────────────────────────
@@ -174,8 +188,13 @@ const joinCtrl = {
 
         res.status(200).json({ status: 'accepted', student: fmt(student) });
       } else {
+        // Reject: mark request, delete student User account and Student profile
         jr.status = 'rejected';
         await jr.save();
+
+        await User.findOneAndDelete({ email: jr.studentEmail, role: 'student' });
+        await Student.findOneAndDelete({ email: jr.studentEmail });
+
         res.status(200).json({ status: 'rejected' });
       }
     } catch (err) {

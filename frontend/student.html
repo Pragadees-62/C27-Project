@@ -282,8 +282,11 @@ function showBanner(status) {
   } else if (status === "rejected") {
     icon.textContent  = "❌";
     title.textContent = "Request Rejected";
-    msg.textContent   = "Your join request was rejected. Please contact your department teacher or register again with the correct department.";
-    btn.style.display = "none";
+    msg.textContent   = "Your join request was rejected by the teacher. Your account will be removed. You can register again with the correct department.";
+    btn.textContent   = "Delete My Account";
+    btn.onclick       = deleteAccountAndLogout;
+    btn.style.display = "inline-block";
+    btn.style.background = "linear-gradient(135deg,#ef4444,#b91c1c)";
   }
 
   banner.style.display = "flex";
@@ -326,6 +329,19 @@ function pollJoinStatus() {
 
 function hideLoader() {
   document.getElementById("page-loader").classList.add("hidden");
+}
+
+// ── Delete account on rejection ───────────────────────────────────────────────
+async function deleteAccountAndLogout() {
+  try {
+    await fetch(`${API}/auth/account`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch { /* best effort */ }
+  sessionStorage.clear();
+  window.location.replace("/");
 }
 
 function headers() {
@@ -382,9 +398,13 @@ function logout() {
 async function loadMarks() {
   try {
     const res  = await fetch(`${API}/marks`, { headers: headers() });
-    const data = await res.json();
-    const tbody = document.getElementById("marks-tbody");
+    let   data = await res.json();
+    const tbody   = document.getElementById("marks-tbody");
     const statsEl = document.getElementById("marks-stats");
+
+    // Filter to only this student's marks
+    const myName = (username || "").trim();
+    if (myName) data = data.filter(m => m.student === myName);
 
     if (!data.length) {
       tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">📭</div>No marks recorded yet.</div></td></tr>`;
@@ -438,9 +458,13 @@ async function loadMarks() {
 async function loadAttendance() {
   try {
     const res  = await fetch(`${API}/attendance`, { headers: headers() });
-    const data = await res.json();
-    const tbody = document.getElementById("attendance-tbody");
+    let   data = await res.json();
+    const tbody   = document.getElementById("attendance-tbody");
     const statsEl = document.getElementById("attendance-stats");
+
+    // Filter to only this student's records by name
+    const myName = (username || "").trim();
+    if (myName) data = data.filter(a => a.student === myName);
 
     if (!data.length) {
       tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">📭</div>No attendance records yet.</div></td></tr>`;
