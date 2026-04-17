@@ -3,34 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Student Portal – SMS</title>
+  <title>EduPrime — Student Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <!-- ── Page loader ─────────────────────────────────────────────── -->
 <div id="page-loader">
-  <div class="loader-logo">🎓</div>
-  <div class="loader-spinner"></div>
-  <div class="loader-text">Loading Student Portal…</div>
+  <div class="loader-crest">🎓</div>
+  <div class="loader-ring"></div>
+  <div class="loader-label">Student Portal</div>
 </div>
 
 <!-- ── Join status banner ──────────────────────────────────────── -->
-<div id="join-banner" style="
-  display:none; position:fixed; inset:0; z-index:9000;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-  align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:420px;
-              box-shadow:0 24px 64px rgba(0,0,0,0.25);text-align:center;">
-    <div id="banner-icon" style="font-size:52px;margin-bottom:12px;">⏳</div>
-    <h2 id="banner-title" style="font-size:1.3rem;font-weight:700;color:#2d3748;margin-bottom:8px;"></h2>
-    <p  id="banner-msg"   style="color:#718096;font-size:0.9rem;line-height:1.6;margin-bottom:24px;"></p>
-    <div id="banner-dept" style="display:inline-block;padding:6px 18px;border-radius:20px;
-         background:#ebf4ff;color:#434190;font-weight:700;font-size:0.9rem;margin-bottom:20px;"></div>
+<div id="join-banner" style="display:none;">
+  <div class="join-banner-card">
+    <div class="join-banner-icon" id="banner-icon">⏳</div>
+    <h2 class="join-banner-title" id="banner-title"></h2>
+    <p  class="join-banner-msg"   id="banner-msg"></p>
+    <div class="join-banner-dept" id="banner-dept"></div>
     <br/>
-    <button id="banner-btn" onclick="dismissBanner()"
-      style="display:none;padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);
-             color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;">
+    <button class="join-banner-btn" id="banner-btn" onclick="dismissBanner()" style="display:none;">
       Go to Dashboard →
     </button>
   </div>
@@ -41,9 +35,13 @@
   <!-- ── Sidebar ──────────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <span class="sidebar-brand-icon">🎓</span>
+        <span class="sidebar-brand-name">EduPrime</span>
+      </div>
       <div class="role-badge student-badge">🎓 Student</div>
       <h2 id="welcomeName">Welcome!</h2>
-      <p id="mentorInfo" style="font-size:0.78rem;color:#a0aec0;margin-top:6px;line-height:1.4;"></p>
+      <p id="mentorInfo" style="font-size:0.75rem;color:var(--muted);margin-top:6px;line-height:1.6;"></p>
     </div>
 
     <nav>

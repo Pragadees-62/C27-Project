@@ -1,31 +1,35 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const {
-  requireTeacher, joinRequestController,
+  requireTeacher, authCtrl, joinCtrl,
   teachersCtrl, studentsCtrl, marksCtrl,
-  announcementsCtrl, attendanceCtrl, feesCtrl
+  announcementsCtrl, attendanceCtrl, feesCtrl,
 } = require('../controllers/apiController');
 
-// Join Requests
-router.post('/join-request', joinRequestController.create);
-router.get('/join-requests', joinRequestController.getAll);
-router.get('/join-request-status', joinRequestController.getStatus);
-router.put('/join-request/:id', requireTeacher, joinRequestController.update);
+// ── Auth ──────────────────────────────────────────────────────────────────────
+router.post('/auth/register', authCtrl.register);
+router.post('/auth/login',    authCtrl.login);
 
-// Helper to map standard resource routes
-const createResourceRoutes = (resourceName, ctrl) => {
-  router.get(`/${resourceName}`, ctrl.getAll);
-  router.get(`/${resourceName}/:id`, ctrl.getOne);
-  router.post(`/${resourceName}`, requireTeacher, ctrl.create);
-  router.put(`/${resourceName}/:id`, requireTeacher, ctrl.update);
-  router.delete(`/${resourceName}/:id`, requireTeacher, ctrl.deleteOne);
+// ── Join Requests ─────────────────────────────────────────────────────────────
+router.post('/join-request',        joinCtrl.create);
+router.get('/join-requests',        joinCtrl.getAll);
+router.get('/join-request-status',  joinCtrl.getStatus);
+router.put('/join-request/:id',     requireTeacher, joinCtrl.update);
+
+// ── Resource routes helper ────────────────────────────────────────────────────
+const resource = (name, ctrl) => {
+  router.get(`/${name}`,      ctrl.getAll);
+  router.get(`/${name}/:id`,  ctrl.getOne);
+  router.post(`/${name}`,     requireTeacher, ctrl.create);
+  router.put(`/${name}/:id`,  requireTeacher, ctrl.update);
+  router.delete(`/${name}/:id`, requireTeacher, ctrl.remove);
 };
 
-createResourceRoutes('teachers', teachersCtrl);
-createResourceRoutes('students', studentsCtrl);
-createResourceRoutes('marks', marksCtrl);
-createResourceRoutes('announcements', announcementsCtrl);
-createResourceRoutes('attendance', attendanceCtrl);
-createResourceRoutes('fees', feesCtrl);
+resource('teachers',      teachersCtrl);
+resource('students',      studentsCtrl);
+resource('marks',         marksCtrl);
+resource('announcements', announcementsCtrl);
+resource('attendance',    attendanceCtrl);
+resource('fees',          feesCtrl);
 
 module.exports = router;
