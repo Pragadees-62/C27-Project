@@ -28,6 +28,9 @@ pipeline {
         stage('Deploy Containers') {
             steps {
                 sh 'docker-compose down --remove-orphans'
+                // Kill any process still holding port 3000 or 80
+                sh 'fuser -k 3000/tcp || true'
+                sh 'fuser -k 80/tcp || true'
                 sh 'docker-compose up -d'
                 echo '✅ Containers started.'
             }
