@@ -42,6 +42,16 @@ resource "aws_dynamodb_table" "teachers" {
     type = "S"
   }
 
+  attribute {
+    name = "department"
+    type = "S"
+  }
+
+  attribute {
+    name = "email"
+    type = "S"
+  }
+
   # GSI to query by department
   global_secondary_index {
     name            = "department-index"
@@ -49,9 +59,11 @@ resource "aws_dynamodb_table" "teachers" {
     projection_type = "ALL"
   }
 
-  attribute {
-    name = "department"
-    type = "S"
+  # GSI to query by email (used during registration)
+  global_secondary_index {
+    name            = "email-index"
+    hash_key        = "email"
+    projection_type = "ALL"
   }
 
   tags = var.tags
