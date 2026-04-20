@@ -311,11 +311,11 @@ function pollJoinStatus() {
         const sData = await sRes.json();
         const me    = sData.find(s => s.email === email);
         if (me) {
-          sessionStorage.setItem("studentId",   me.id);
+          sessionStorage.setItem("studentId",   me.id || me._id || "");
           sessionStorage.setItem("mentorName",  me.mentorName || "");
           sessionStorage.setItem("joinAccepted","yes");
           mentorName = me.mentorName || "";
-          studentId  = me.id;
+          studentId  = me.id || me._id || "";
           updateSidebarInfo();
         }
         showBanner("accepted");

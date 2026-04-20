@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>EduPrime — Project Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&family=Arial:wght@400;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.8;
+    color: #000;
+    background: #f5f5f5;
+  }
+
+  /* Each .page is one A4 page */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 10mm auto;
+    padding: 25mm 25mm 20mm 30mm;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    page-break-after: always;
+    position: relative;
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 20pt; text-align: center; font-weight: bold; margin-bottom: 10px; }
+  h2 { font-size: 15pt; font-weight: bold; margin: 18px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; }
+  h3 { font-size: 13pt; font-weight: bold; margin: 14px 0 6px; }
+  h4 { font-size: 12pt; font-weight: bold; margin: 10px 0 4px; }
+  p  { margin-bottom: 10px; text-align: justify; }
+  ul, ol { margin: 8px 0 10px 24px; }
+  li { margin-bottom: 4px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
+  th { background: #2d3748; color: #fff; padding: 8px 10px; text-align: left; font-weight: bold; }
+  td { padding: 7px 10px; border: 1px solid #ccc; }
+  tr:nth-child(even) td { background: #f7f7f7; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #1e2433; color: #e8eaf0;
+    padding: 12px 16px; border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 9.5pt; overflow-x: auto;
+    margin: 10px 0; white-space: pre-wrap;
+  }
+
+  /* ── Title page ── */
+  .title-page { text-align: center; padding-top: 40mm; }
+  .title-page .main-title { font-size: 26pt; font-weight: bold; margin-bottom: 8px; }
+  .title-page .sub-title  { font-size: 16pt; margin-bottom: 30px; color: #333; }
+  .title-page .crest      { font-size: 72pt; margin-bottom: 20px; }
+  .title-page table       { width: 80%; margin: 30px auto; }
+  .title-page td          { text-align: left; padding: 6px 12px; }
+  .title-page td:first-child { font-weight: bold; width: 40%; }
+
+  /* ── TOC ── */
+  .toc-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #999; }
+  .toc-row span:first-child { flex: 1; }
+  .toc-row span:last-child  { min-width: 40px; text-align: right; }
+
+  /* ── Screenshot placeholder / drop zone ── */
+  .screenshot-box {
+    border: 2px dashed #4a90d9;
+    border-radius: 8px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f0f7ff;
+    margin: 16px 0;
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .screenshot-box.has-image {
+    border: 2px solid #38a169;
+    background: #f0fff4;
+    padding: 0;
+    min-height: unset;
+  }
+  .screenshot-box.drag-over {
+    background: #dbeafe;
+    border-color: #2563eb;
+  }
+  .screenshot-box img.dropped {
+    width: 100%;
+    border-radius: 6px;
+    display: block;
+  }
+  .screenshot-box .ss-icon  { font-size: 32pt; margin-bottom: 8px; }
+  .screenshot-box .ss-label { font-size: 11pt; font-weight: bold; color: #1a56db; }
+  .screenshot-box .ss-hint  { font-size: 9pt; color: #888; margin-top: 6px; line-height: 1.5; }
+  .screenshot-box .remove-btn {
+    position: absolute; top: 6px; right: 8px;
+    background: #e53e3e; color: #fff;
+    border: none; border-radius: 4px;
+    padding: 3px 8px; font-size: 9pt;
+    cursor: pointer; display: none;
+  }
+  .screenshot-box.has-image .remove-btn { display: block; }
+  .drop-input { display: none; }
+
+  @media print {
+    .screenshot-box { border: 1px solid #ccc !important; background: #fff !important; }
+    .remove-btn { display: none !important; }
+    .ss-hint, .ss-label, .ss-icon { display: none; }
+  }
+
+  /* ── Page number ── */
+  .page-num {
+    position: absolute; bottom: 12mm; right: 25mm;
+    font-size: 10pt; color: #666;
+  }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid #ccc; margin: 14px 0; }
+
+  /* ── Highlight box ── */
+  .info-box {
+    background: #ebf4ff; border-left: 4px solid #3182ce;
+    padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0;
+    font-size: 11pt;
+  }
+
+  /* ── Architecture diagram ── */
+  .arch { font-family: 'Courier New', monospace; font-size: 9pt; background: #f4f4f4; padding: 14px; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; white-space: pre; }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; width: 100%; min-height: 100vh; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE 1 — TITLE PAGE
+═══════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="title-page">
+    <div class="crest">🎓</div>
+    <div class="main-title">EduPrime</div>
+    <div class="sub-title">Student Management System</div>
+    <p style="font-size:13pt;color:#555;margin-bottom:30px;">
+      A Full-Stack Web Application with Cloud Infrastructure,<br/>
+      CI/CD Pipeline, and Role-Based Access Control
+    </p>
+    <hr/>
+    <table>
+      <tr><td>Project Name</td><td>EduPrime — Student Management System</td></tr>
+      <tr><td>Developer</td><td>Pragadees M</td></tr>
+      <tr><td>Repository</td><td>github.com/Pragadees-62/C27-Project</td></tr>
+      <tr><td>Backend</td><td>Node.js + Express.js</td></tr>
+      <tr><td>Database</td><td>AWS DynamoDB</td></tr>
+      <tr><td>Frontend</td><td>HTML5 + CSS3 + Vanilla JavaScript</td></tr>
+      <tr><td>Infrastructure</td><td>Terraform (IaC)</td></tr>
+      <tr><td>Containerization</td><td>Docker + Docker Compose</td></tr>
+      <tr><td>CI/CD</td><td>Jenkins + GitHub Webhooks</td></tr>
+      <tr><td>Deployment</td><td>AWS EC2</td></tr>
+      <tr><td>Date</td><td>April 2026</td></tr>
+    </table>
+  </div>
+  <div class="page-num">1</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE 2 — ABSTRACT
+═══════════════════════════════════════════════════════ -->
+<div class="page">
+  <h2>Abstract</h2>
+  <p>EduPrime is a full-stack Student Management System designed to digitize and streamline the academic administration process for educational institutions. The system provides two distinct role-based portals — one for teachers and one for students — each with tailored functionality and access controls.</p>
+  <p>The application enables teachers to manage student enrollment through a department-based join request system, track attendance, record marks, post announcements, and manage fee records. Students can register, select their department, submit a join request to their department teacher, and upon approval, access their academic records including marks, attendance, announcements, and fee status.</p>
+  <p>The project is built using modern web technologies with a Node.js and Express.js backend, AWS DynamoDB as the NoSQL database, and a responsive dark-themed frontend. The entire infrastructure is provisioned using Terraform as Infrastructure as Code (IaC), containerized with Docker, and deployed on AWS EC2 with an automated CI/CD pipeline powered by Jenkins and GitHub Webhooks.</p>
+  <p>Key features include JWT-based authentication, bcrypt password hashing, department-based access control, real-time join request polling, automatic mentor assignment, and a fully automated deployment pipeline that triggers on every GitHub push.</p>
+
+  <h2>Table of Contents</h2>
+  <div class="toc-row"><span>Chapter 1 — Introduction</span><span>3</span></div>
+  <div class="toc-row"><span>Chapter 2 — Problem Statement</span><span>4</span></div>
+  <div class="toc-row"><span>Chapter 3 — Objectives</span><span>4</span></div>
+  <div class="toc-row"><span>Chapter 4 — System Architecture</span><span>5</span></div>
+  <div class="toc-row"><span>Chapter 5 — Technology Stack</span><span>6</span></div>
+  <div class="toc-row"><span>Chapter 6 — Module Description</span><span>7</span></div>
+  <div class="toc-row"><span>Chapter 7 — Database Design (DynamoDB)</span><span>8</span></div>
+  <div class="toc-row"><span>Chapter 8 — API Design</span><span>9</span></div>
+  <div class="toc-row"><span>Chapter 9 — Infrastructure as Code (Terraform)</span><span>10</span></div>
+  <div class="toc-row"><span>Chapter 10 — CI/CD Pipeline (Jenkins)</span><span>11</span></div>
+  <div class="toc-row"><span>Chapter 11 — Security Implementation</span><span>12</span></div>
+  <div class="toc-row"><span>Chapter 12 — Screenshots — Login Page</span><span>13</span></div>
+  <div class="toc-row"><span>Chapter 13 — Screenshots — Teacher Portal</span><span>14</span></div>
+  <div class="toc-row"><span>Chapter 14 — Screenshots — Student Portal</span><span>15</span></div>
+  <div class="toc-row"><span>Chapter 15 — Conclusion &amp; Future Scope</span><span>16</span></div>
+  <div class="page-num">2</div>
+</div>
+
+<!-- PAGE 3 — INTRODUCTION -->
+<div class="page">
+  <h2>Chapter 1: Introduction</h2>
+  <h3>1.1 Overview</h3>
+  <p>Educational institutions handle large volumes of student data on a daily basis — enrollment records, attendance, marks, fee payments, and announcements. Managing this data manually through paper records or disconnected spreadsheets leads to inefficiency, data loss, and poor communication between teachers and students.</p>
+  <p>EduPrime is a web-based Student Management System that addresses these challenges by providing a centralized, secure, and role-based digital platform. The system is designed to be beginner-friendly while incorporating industry-standard technologies and practices used in real-world production environments.</p>
+  <h3>1.2 Motivation</h3>
+  <p>The motivation behind this project is to build a production-ready application that demonstrates:</p>
+  <ul>
+    <li>Full-stack web development skills (Node.js, Express, HTML/CSS/JS)</li>
+    <li>Cloud database integration (AWS DynamoDB)</li>
+    <li>Infrastructure automation (Terraform)</li>
+    <li>Containerization (Docker and Docker Compose)</li>
+    <li>Automated deployment (Jenkins CI/CD with GitHub Webhooks)</li>
+    <li>Secure authentication (JWT tokens and bcrypt password hashing)</li>
+  </ul>
+  <h3>1.3 Scope</h3>
+  <p>The system covers the following scope:</p>
+  <ul>
+    <li>User registration and authentication for students and teachers</li>
+    <li>Department-based student enrollment with teacher approval workflow</li>
+    <li>Academic record management (marks, attendance, fees, announcements)</li>
+    <li>Automated cloud infrastructure provisioning using Terraform</li>
+    <li>Continuous integration and deployment pipeline using Jenkins</li>
+    <li>Containerized deployment on AWS EC2</li>
+  </ul>
+  <h3>1.4 Project URL</h3>
+  <div class="info-box">
+    GitHub Repository: <strong>https://github.com/Pragadees-62/C27-Project</strong>
+  </div>
+  <div class="page-num">3</div>
+</div>
+
+<!-- PAGE 4 — PROBLEM STATEMENT & OBJECTIVES -->
+<div class="page">
+  <h2>Chapter 2: Problem Statement</h2>
+  <p>Traditional student management in educational institutions faces several challenges:</p>
+  <ul>
+    <li><strong>Manual Record Keeping:</strong> Attendance, marks, and fee records are maintained in physical registers or disconnected Excel sheets, making retrieval and analysis time-consuming and error-prone.</li>
+    <li><strong>No Role Separation:</strong> There is no clear digital separation between what a teacher can do and what a student can access, leading to data integrity issues.</li>
+    <li><strong>No Enrollment Control:</strong> Students can be added to any class without teacher approval, leading to incorrect department assignments.</li>
+    <li><strong>No Automated Deployment:</strong> Code changes require manual server updates, increasing downtime and human error risk.</li>
+    <li><strong>No Cloud Scalability:</strong> On-premise databases cannot scale automatically with growing student data volumes.</li>
+    <li><strong>Security Gaps:</strong> Passwords stored in plain text, no token-based session management, no audit trail.</li>
+  </ul>
+
+  <h2>Chapter 3: Objectives</h2>
+  <p>The primary objectives of EduPrime are:</p>
+  <ol>
+    <li><strong>Role-Based Access Control</strong> — Separate portals for teachers (full CRUD) and students (read-only access to own data)</li>
+    <li><strong>Department-Based Enrollment</strong> — Students join a department and require teacher approval before accessing the portal</li>
+    <li><strong>Secure Authentication</strong> — JWT tokens and bcrypt password hashing (10 salt rounds)</li>
+    <li><strong>Cloud Database</strong> — AWS DynamoDB for scalable, serverless NoSQL storage with IAM role access</li>
+    <li><strong>Infrastructure as Code</strong> — Terraform to provision all AWS resources (DynamoDB tables, IAM roles)</li>
+    <li><strong>Containerization</strong> — Docker and Docker Compose for consistent, reproducible environments</li>
+    <li><strong>Automated CI/CD</strong> — Jenkins pipeline triggered by GitHub webhooks on every push</li>
+    <li><strong>Responsive UI</strong> — Luxury dark-themed interface accessible on all screen sizes</li>
+  </ol>
+  <div class="page-num">4</div>
+</div>
+
+<!-- PAGE 5 — SYSTEM ARCHITECTURE -->
+<div class="page">
+  <h2>Chapter 4: System Architecture</h2>
+  <h3>4.1 High-Level Architecture</h3>
+  <div class="arch">
+┌─────────────────────────────────────────────────────────┐
+│              GitHub Repository                          │
+│         github.com/Pragadees-62/C27-Project             │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Push → Webhook (HTTP POST)
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              Jenkins CI/CD Server (EC2)                 │
+│    Checkout → Build Docker → Deploy → Health Check      │
+└──────────────────────┬──────────────────────────────────┘
+                       │ docker-compose up -d
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│                  AWS EC2 Instance                       │
+│  ┌──────────────────┐    ┌──────────────────────────┐  │
+│  │  Frontend (Nginx) │    │  Backend (Node.js)        │  │
+│  │  Port 80          │───▶│  Express.js Port 3000     │  │
+│  │  HTML/CSS/JS      │    │  JWT Auth + REST API      │  │
+│  └──────────────────┘    └────────────┬─────────────┘  │
+│                                        │ AWS SDK v3      │
+└────────────────────────────────────────┼────────────────┘
+                                         │ IAM Role (no keys)
+                                         ▼
+                          ┌──────────────────────────┐
+                          │      AWS DynamoDB         │
+                          │  8 Tables PAY_PER_REQUEST │
+                          │  sms-users                │
+                          │  sms-teachers             │
+                          │  sms-students             │
+                          │  sms-join-requests        │
+                          │  sms-marks                │
+                          │  sms-attendance           │
+                          │  sms-announcements        │
+                          │  sms-fees                 │
+                          └──────────────────────────┘</div>
+
+  <h3>4.2 Request Flow</h3>
+  <ol>
+    <li>User opens browser → Nginx serves <code>index.html</code></li>
+    <li>User logs in → Frontend sends POST to <code>/api/auth/login</code></li>
+    <li>Backend validates credentials against DynamoDB <code>sms-users</code> table</li>
+    <li>JWT token returned → stored in browser <code>sessionStorage</code></li>
+    <li>All subsequent API calls include <code>X-Role</code> header for authorization</li>
+    <li>Backend queries DynamoDB and returns JSON responses to frontend</li>
+  </ol>
+
+  <h3>4.3 Docker Container Architecture</h3>
+  <table>
+    <tr><th>Container</th><th>Base Image</th><th>Port</th><th>Purpose</th></tr>
+    <tr><td>sms-backend</td><td>node:18-alpine</td><td>3000</td><td>REST API + static file serving</td></tr>
+    <tr><td>sms-frontend</td><td>nginx:alpine</td><td>80</td><td>Reverse proxy to backend API</td></tr>
+  </table>
+  <div class="page-num">5</div>
+</div>
+
+<!-- PAGE 6 — TECHNOLOGY STACK -->
+<div class="page">
+  <h2>Chapter 5: Technology Stack</h2>
+  <h3>5.1 Frontend Technologies</h3>
+  <table>
+    <tr><th>Technology</th><th>Purpose</th></tr>
+    <tr><td>HTML5</td><td>Page structure and semantic markup</td></tr>
+    <tr><td>CSS3 (Custom)</td><td>Luxury dark theme with CSS variables and animations</td></tr>
+    <tr><td>Vanilla JavaScript</td><td>DOM manipulation, Fetch API, session management</td></tr>
+    <tr><td>Inter Font (Google Fonts)</td><td>Modern typography</td></tr>
+    <tr><td>Nginx</td><td>Static file serving and API reverse proxy</td></tr>
+  </table>
+
+  <h3>5.2 Backend Technologies</h3>
+  <table>
+    <tr><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+    <tr><td>Node.js</td><td>18 (Alpine)</td><td>JavaScript runtime environment</td></tr>
+    <tr><td>Express.js</td><td>4.19.2</td><td>REST API framework</td></tr>
+    <tr><td>bcryptjs</td><td>2.4.3</td><td>Password hashing (10 salt rounds)</td></tr>
+    <tr><td>jsonwebtoken</td><td>9.0.2</td><td>JWT authentication tokens</td></tr>
+    <tr><td>@aws-sdk/client-dynamodb</td><td>3.600.0</td><td>DynamoDB connection client</td></tr>
+    <tr><td>@aws-sdk/lib-dynamodb</td><td>3.600.0</td><td>DocumentClient (simplified API)</td></tr>
+    <tr><td>uuid</td><td>9.0.1</td><td>Unique ID generation for records</td></tr>
+    <tr><td>dotenv</td><td>16.4.5</td><td>Environment variable management</td></tr>
+    <tr><td>cors</td><td>2.8.5</td><td>Cross-origin resource sharing</td></tr>
+  </table>
+
+  <h3>5.3 Database</h3>
+  <table>
+    <tr><th>Technology</th><th>Purpose</th></tr>
+    <tr><td>AWS DynamoDB</td><td>Serverless NoSQL cloud database</td></tr>
+    <tr><td>PAY_PER_REQUEST billing</td><td>No capacity planning — auto-scales</td></tr>
+    <tr><td>Global Secondary Indexes</td><td>Query by email and department</td></tr>
+    <tr><td>EC2 IAM Role</td><td>Secure credential-free access from EC2</td></tr>
+  </table>
+
+  <h3>5.4 Infrastructure &amp; DevOps</h3>
+  <table>
+    <tr><th>Technology</th><th>Purpose</th></tr>
+    <tr><td>Docker</td><td>Application containerization</td></tr>
+    <tr><td>Docker Compose</td><td>Multi-container orchestration</td></tr>
+    <tr><td>Terraform</td><td>Infrastructure as Code (IaC)</td></tr>
+    <tr><td>Jenkins</td><td>CI/CD automation server</td></tr>
+    <tr><td>GitHub Webhooks</td><td>Trigger Jenkins on every push</td></tr>
+    <tr><td>AWS EC2</td><td>Cloud virtual machine for hosting</td></tr>
+    <tr><td>AWS IAM</td><td>Role-based AWS service access control</td></tr>
+  </table>
+  <div class="page-num">6</div>
+</div>
+
+<!-- PAGE 7 — MODULE DESCRIPTION -->
+<div class="page">
+  <h2>Chapter 6: Module Description</h2>
+  <h3>6.1 Authentication Module</h3>
+  <p>The authentication module handles user registration and login for both students and teachers using email-based credentials.</p>
+  <h4>Registration Flow:</h4>
+  <ul>
+    <li>User fills Full Name, Email, Password, Confirm Password</li>
+    <li>Student selects Department (CSE, ECE, IT, EEE, AIDS, AIML, MECH, CIVIL, CHEM, MBA, MCA)</li>
+    <li>Teacher enters secret Teacher Code and selects Department</li>
+    <li>Password hashed using bcrypt (10 salt rounds) before storage</li>
+    <li>User record saved to <code>sms-users</code> DynamoDB table</li>
+    <li>Teacher profile also saved to <code>sms-teachers</code> table</li>
+    <li>JWT token returned on successful registration</li>
+  </ul>
+  <h4>Login Flow:</h4>
+  <ul>
+    <li>Email, password, and role submitted to <code>/api/auth/login</code></li>
+    <li>User fetched from DynamoDB by email</li>
+    <li>bcrypt.compare() validates password against stored hash</li>
+    <li>JWT token signed with 7-day expiry and returned</li>
+    <li>Session data stored in browser sessionStorage</li>
+  </ul>
+
+  <h3>6.2 Teacher Portal Module</h3>
+  <p>The teacher portal provides full CRUD access to all academic data within the teacher's department.</p>
+  <ul>
+    <li><strong>Students Section:</strong> View accepted students, see pending join requests with Accept/Reject buttons, manually add or delete students</li>
+    <li><strong>Join Request Management:</strong> Accept creates Student profile and assigns mentor; Reject deletes student's User account and all related data</li>
+    <li><strong>Marks Section:</strong> Add, update, delete marks filtered by teacher's department</li>
+    <li><strong>Attendance Section:</strong> Mark Present/Absent/Late for students with date selection</li>
+    <li><strong>Announcements Section:</strong> Post and delete department announcements</li>
+    <li><strong>Fees Section:</strong> Track fee payment status (Paid/Pending/Overdue)</li>
+  </ul>
+
+  <h3>6.3 Student Portal Module</h3>
+  <p>The student portal provides read-only access to the student's own academic records.</p>
+  <ul>
+    <li><strong>Join Request Flow:</strong> On first login, system automatically sends a join request to the department teacher. Student sees a waiting screen with real-time polling every 5 seconds</li>
+    <li><strong>On Acceptance:</strong> Dashboard unlocks, mentor assigned, student ID shown in sidebar</li>
+    <li><strong>On Rejection:</strong> Account deleted, student must re-register with correct department</li>
+    <li><strong>My Marks:</strong> Filtered to show only this student's records with grade labels (A/B/C/F)</li>
+    <li><strong>Attendance:</strong> Filtered by student name with stats (Present/Absent/Late counts and percentage)</li>
+    <li><strong>Announcements:</strong> All department announcements visible</li>
+    <li><strong>Fees:</strong> Fee payment status with total paid and amount due stats</li>
+  </ul>
+  <div class="page-num">7</div>
+</div>
+
+<!-- PAGE 8 — DATABASE DESIGN -->
+<div class="page">
+  <h2>Chapter 7: Database Design — AWS DynamoDB</h2>
+  <h3>7.1 Why DynamoDB</h3>
+  <p>DynamoDB was chosen over traditional relational databases for the following reasons:</p>
+  <ul>
+    <li><strong>Serverless:</strong> No database server to manage or maintain</li>
+    <li><strong>Auto-scaling:</strong> PAY_PER_REQUEST billing scales automatically with usage</li>
+    <li><strong>High availability:</strong> Built-in replication across AWS availability zones</li>
+    <li><strong>IAM Integration:</strong> Secure access via EC2 IAM roles without hardcoded credentials</li>
+  </ul>
+
+  <h3>7.2 Table Designs</h3>
+  <table>
+    <tr><th>Table Name</th><th>Hash Key</th><th>GSI</th><th>Key Attributes</th></tr>
+    <tr><td>sms-users</td><td>email (S)</td><td>—</td><td>fullname, password, role, department</td></tr>
+    <tr><td>sms-teachers</td><td>id (S)</td><td>department-index, email-index</td><td>name, email, department</td></tr>
+    <tr><td>sms-students</td><td>id (S)</td><td>email-index</td><td>name, email, department, mentorId, mentorName, status</td></tr>
+    <tr><td>sms-join-requests</td><td>id (S)</td><td>studentEmail-index</td><td>studentName, studentEmail, department, status, requestedAt</td></tr>
+    <tr><td>sms-marks</td><td>id (S)</td><td>—</td><td>student, subject, score</td></tr>
+    <tr><td>sms-attendance</td><td>id (S)</td><td>—</td><td>student, date, status, department</td></tr>
+    <tr><td>sms-announcements</td><td>id (S)</td><td>—</td><td>title, message, createdAt</td></tr>
+    <tr><td>sms-fees</td><td>id (S)</td><td>—</td><td>student, amount, status, department</td></tr>
+  </table>
+
+  <h3>7.3 Global Secondary Indexes (GSI)</h3>
+  <p>GSIs allow querying DynamoDB by non-primary-key attributes efficiently:</p>
+  <ul>
+    <li><code>sms-teachers → department-index</code>: Find all teachers in a specific department</li>
+    <li><code>sms-teachers → email-index</code>: Find teacher by email address</li>
+    <li><code>sms-students → email-index</code>: Find student profile by email</li>
+    <li><code>sms-join-requests → studentEmail-index</code>: Find all requests by a student's email</li>
+  </ul>
+
+  <h3>7.4 Data Access Patterns</h3>
+  <table>
+    <tr><th>Operation</th><th>DynamoDB Operation</th><th>Table / Index</th></tr>
+    <tr><td>Login user</td><td>GetItem</td><td>sms-users (email)</td></tr>
+    <tr><td>Find teacher by dept</td><td>Query</td><td>sms-teachers (department-index)</td></tr>
+    <tr><td>Find student by email</td><td>Query</td><td>sms-students (email-index)</td></tr>
+    <tr><td>Get pending requests</td><td>Scan + Filter</td><td>sms-join-requests</td></tr>
+    <tr><td>List all marks</td><td>Scan</td><td>sms-marks</td></tr>
+    <tr><td>Create new record</td><td>PutItem</td><td>Any table</td></tr>
+    <tr><td>Delete record</td><td>DeleteItem</td><td>Any table</td></tr>
+  </table>
+  <div class="page-num">8</div>
+</div>
+
+<!-- PAGE 9 — API DESIGN -->
+<div class="page">
+  <h2>Chapter 8: API Design</h2>
+  <h3>8.1 Authentication Endpoints</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+    <tr><td>POST</td><td>/api/auth/register</td><td>Public</td><td>Register student or teacher account</td></tr>
+    <tr><td>POST</td><td>/api/auth/login</td><td>Public</td><td>Login and receive JWT token</td></tr>
+    <tr><td>DELETE</td><td>/api/auth/account</td><td>Public</td><td>Delete account (called on rejection)</td></tr>
+  </table>
+
+  <h3>8.2 Join Request Endpoints</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+    <tr><td>POST</td><td>/api/join-request</td><td>Student</td><td>Submit department join request</td></tr>
+    <tr><td>GET</td><td>/api/join-requests?department=CSE</td><td>Teacher</td><td>Get requests filtered by department</td></tr>
+    <tr><td>GET</td><td>/api/join-request-status?email=x</td><td>Student</td><td>Poll current request status</td></tr>
+    <tr><td>PUT</td><td>/api/join-request/:id</td><td>Teacher</td><td>Accept or reject a join request</td></tr>
+  </table>
+
+  <h3>8.3 Resource Endpoints (REST)</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+    <tr><td>GET</td><td>/api/teachers</td><td>Public</td><td>List all teachers</td></tr>
+    <tr><td>POST</td><td>/api/teachers</td><td>Teacher</td><td>Add teacher profile</td></tr>
+    <tr><td>GET</td><td>/api/students</td><td>Public</td><td>List all students</td></tr>
+    <tr><td>POST</td><td>/api/students</td><td>Teacher</td><td>Add student manually</td></tr>
+    <tr><td>PUT</td><td>/api/students/:id</td><td>Teacher</td><td>Update student record</td></tr>
+    <tr><td>DELETE</td><td>/api/students/:id</td><td>Teacher</td><td>Remove student</td></tr>
+    <tr><td>GET</td><td>/api/marks</td><td>Public</td><td>List all marks</td></tr>
+    <tr><td>POST</td><td>/api/marks</td><td>Teacher</td><td>Add mark record</td></tr>
+    <tr><td>PUT</td><td>/api/marks/:id</td><td>Teacher</td><td>Update mark</td></tr>
+    <tr><td>DELETE</td><td>/api/marks/:id</td><td>Teacher</td><td>Delete mark</td></tr>
+    <tr><td>GET</td><td>/api/attendance</td><td>Public</td><td>List attendance records</td></tr>
+    <tr><td>POST</td><td>/api/attendance</td><td>Teacher</td><td>Mark attendance</td></tr>
+    <tr><td>GET</td><td>/api/announcements</td><td>Public</td><td>List announcements</td></tr>
+    <tr><td>POST</td><td>/api/announcements</td><td>Teacher</td><td>Post announcement</td></tr>
+    <tr><td>GET</td><td>/api/fees</td><td>Public</td><td>List fee records</td></tr>
+    <tr><td>POST</td><td>/api/fees</td><td>Teacher</td><td>Add fee record</td></tr>
+  </table>
+
+  <h3>8.4 Authorization Mechanism</h3>
+  <p>Teacher-only endpoints are protected by the <code>requireTeacher</code> middleware which checks the <code>X-Role: teacher</code> request header. All write operations (POST, PUT, DELETE) require teacher role. Students can only perform GET requests. Unauthorized access returns HTTP 403 Forbidden.</p>
+
+  <h3>8.5 Sample API Response</h3>
+  <pre>POST /api/auth/login
+Response 200 OK:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "fullname": "Pragadees M",
+    "email": "pragadees@example.com",
+    "role": "teacher",
+    "department": "CSE",
+    "teacherId": "uuid-1234"
+  }
+}</pre>
+  <div class="page-num">9</div>
+</div>
+
+<!-- PAGE 10 — TERRAFORM -->
+<div class="page">
+  <h2>Chapter 9: Infrastructure as Code — Terraform</h2>
+  <h3>9.1 What is Terraform</h3>
+  <p>Terraform is an open-source Infrastructure as Code (IaC) tool by HashiCorp that allows infrastructure to be defined in human-readable configuration files and provisioned automatically. Instead of manually creating AWS resources through the console, Terraform creates, updates, and destroys resources through code — making infrastructure reproducible, version-controlled, and automated.</p>
+
+  <h3>9.2 Terraform File Structure</h3>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td>terraform/main.tf</td><td>All 8 DynamoDB table definitions</td></tr>
+    <tr><td>terraform/variables.tf</td><td>Input variables (region, prefix, tags)</td></tr>
+    <tr><td>terraform/outputs.tf</td><td>Output values (table names after creation)</td></tr>
+    <tr><td>terraform/iam.tf</td><td>IAM role, policy, and instance profile for EC2</td></tr>
+    <tr><td>terraform/.terraform.lock.hcl</td><td>Provider version lock file</td></tr>
+  </table>
+
+  <h3>9.3 DynamoDB Table Definition (Example)</h3>
+  <pre>resource "aws_dynamodb_table" "teachers" {
+  name         = "sms-teachers"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute { name = "id"         type = "S" }
+  attribute { name = "department" type = "S" }
+  attribute { name = "email"      type = "S" }
+
+  global_secondary_index {
+    name            = "department-index"
+    hash_key        = "department"
+    projection_type = "ALL"
+  }
+}</pre>
+
+  <h3>9.4 IAM Role for EC2 (No Hardcoded Keys)</h3>
+  <pre>resource "aws_iam_role_policy" "dynamodb_access" {
+  policy = jsonencode({
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["dynamodb:PutItem","dynamodb:GetItem",
+                  "dynamodb:DeleteItem","dynamodb:Scan","dynamodb:Query"]
+      Resource = "arn:aws:dynamodb:ap-south-1:*:table/sms-*"
+    }]
+  })
+}</pre>
+
+  <h3>9.5 Terraform Commands</h3>
+  <table>
+    <tr><th>Command</th><th>Purpose</th></tr>
+    <tr><td>terraform init</td><td>Download AWS provider plugin</td></tr>
+    <tr><td>terraform plan</td><td>Preview changes before applying</td></tr>
+    <tr><td>terraform apply</td><td>Create or update all AWS resources</td></tr>
+    <tr><td>terraform destroy</td><td>Delete all provisioned resources</td></tr>
+  </table>
+
+  <h3>9.6 Benefits of IaC</h3>
+  <ul>
+    <li><strong>Reproducible:</strong> Same infrastructure created every time with zero manual steps</li>
+    <li><strong>Version Controlled:</strong> Infrastructure changes tracked in Git alongside application code</li>
+    <li><strong>Automated:</strong> No manual AWS console clicks required</li>
+    <li><strong>Self-Documenting:</strong> Code serves as documentation of all infrastructure</li>
+  </ul>
+  <div class="page-num">10</div>
+</div>
+
+<!-- PAGE 11 — CI/CD PIPELINE -->
+<div class="page">
+  <h2>Chapter 10: CI/CD Pipeline — Jenkins + GitHub Webhooks</h2>
+  <h3>10.1 Pipeline Overview</h3>
+  <p>The CI/CD pipeline automates the entire build and deployment process. Every time code is pushed to the GitHub repository, the pipeline automatically builds Docker images and deploys the updated application to the EC2 server without any manual intervention.</p>
+
+  <h3>10.2 Pipeline Stages</h3>
+  <table>
+    <tr><th>Stage</th><th>Action</th><th>Description</th></tr>
+    <tr><td>1. Checkout</td><td>git pull</td><td>Pull latest code from GitHub main branch</td></tr>
+    <tr><td>2. Build Docker Images</td><td>docker-compose build</td><td>Build backend (Node.js) and frontend (Nginx) images</td></tr>
+    <tr><td>3. Deploy Containers</td><td>docker-compose up -d</td><td>Stop old containers, free ports, start new containers</td></tr>
+    <tr><td>4. Health Check</td><td>curl /api/teachers</td><td>Verify backend is responding correctly</td></tr>
+  </table>
+
+  <h3>10.3 Jenkinsfile (Declarative Pipeline)</h3>
+  <p>The pipeline is defined in a <code>Jenkinsfile</code> at the root of the repository using Jenkins Declarative Pipeline syntax. When a developer pushes code to GitHub, the webhook triggers Jenkins which reads this file and executes each stage automatically.</p>
+
+  <p>The pipeline has <strong>4 stages</strong> that run in sequence:</p>
+
+  <table>
+    <tr><th>Stage</th><th>Command</th><th>What it does</th></tr>
+    <tr><td>1. Checkout</td><td>checkout scm</td><td>Pulls the latest code from the main branch of the GitHub repository into the Jenkins workspace</td></tr>
+    <tr><td>2. Build Docker Images</td><td>docker-compose build</td><td>Builds the backend (Node.js + Express) and frontend (Nginx) Docker images from their Dockerfiles</td></tr>
+    <tr><td>3. Deploy Containers</td><td>docker-compose up -d</td><td>Stops old containers, frees ports 3000 and 80 using fuser, then starts fresh containers in detached mode</td></tr>
+    <tr><td>4. Health Check</td><td>curl /api/teachers</td><td>Waits 15 seconds then sends an HTTP request to verify the backend is running and responding correctly</td></tr>
+  </table>
+
+  <p><strong>Post Actions</strong> run after all stages complete regardless of success or failure:</p>
+  <ul>
+    <li><strong>Success:</strong> Logs a deployment success message confirming EduPrime is live</li>
+    <li><strong>Failure:</strong> Runs <code>docker-compose down</code> to clean up broken containers and logs the failure for debugging</li>
+    <li><strong>Always:</strong> Runs <code>docker image prune -f</code> to remove unused Docker images and free up disk space on the EC2 server</li>
+  </ul>
+
+  <p>The <code>githubPush()</code> trigger in the pipeline ensures that every <code>git push</code> to the repository automatically starts a new build — making the entire deployment process fully automated with zero manual steps required on the server.</p>
+
+  <h3>10.4 GitHub Webhook Configuration</h3>
+  <table>
+    <tr><th>Setting</th><th>Value</th></tr>
+    <tr><td>Payload URL</td><td>http://EC2-IP:8080/github-webhook/</td></tr>
+    <tr><td>Content Type</td><td>application/json</td></tr>
+    <tr><td>Trigger Event</td><td>Push events only</td></tr>
+    <tr><td>Status</td><td>Active ✅</td></tr>
+  </table>
+
+  <h3>10.5 Benefits of CI/CD</h3>
+  <ul>
+    <li><strong>Zero Manual Deployment:</strong> Push code → application updates automatically</li>
+    <li><strong>Fast Feedback:</strong> Build failures detected within minutes of a push</li>
+    <li><strong>Consistent Builds:</strong> Docker ensures same environment every time</li>
+    <li><strong>Automatic Rollback:</strong> Failed deployments trigger container shutdown</li>
+    <li><strong>Audit Trail:</strong> Every deployment logged in Jenkins build history</li>
+  </ul>
+  <div class="page-num">11</div>
+</div>
+
+<!-- PAGE 12 — SECURITY -->
+<div class="page">
+  <h2>Chapter 11: Security Implementation</h2>
+
+  <h3>11.1 Password Security — bcrypt</h3>
+  <p>All passwords are hashed using <strong>bcryptjs</strong> with 10 salt rounds before storage in DynamoDB. Plain text passwords are never stored, logged, or transmitted after the initial registration request.</p>
+  <pre>const hashed = await bcrypt.hash(password, 10);   // Registration
+const match  = await bcrypt.compare(password, stored); // Login</pre>
+
+  <h3>11.2 JWT Authentication</h3>
+  <p>JSON Web Tokens are used for stateless authentication. Tokens are signed with a secret key stored in environment variables and expire after 7 days. The token payload contains only email, role, and department — no sensitive data like passwords.</p>
+
+  <h3>11.3 Role-Based Access Control (RBAC)</h3>
+  <p>The <code>requireTeacher</code> middleware checks the <code>X-Role</code> header on every write request. Students can only perform GET requests. All POST, PUT, DELETE operations require teacher role and return HTTP 403 if unauthorized.</p>
+
+  <h3>11.4 Teacher Registration Code</h3>
+  <p>Teacher accounts require a secret code during registration, preventing unauthorized teacher account creation. The code is stored as an environment variable, not hardcoded in source code.</p>
+
+  <h3>11.5 AWS IAM Security (Least Privilege)</h3>
+  <ul>
+    <li>EC2 uses an IAM Role — no hardcoded AWS credentials anywhere in code</li>
+    <li>IAM policy follows least privilege — only <code>sms-*</code> tables are accessible</li>
+    <li>GSI access explicitly included in the IAM policy</li>
+    <li><code>.env</code> file is in <code>.gitignore</code> — never committed to GitHub</li>
+    <li>Terraform state files excluded from version control</li>
+  </ul>
+
+  <h3>11.6 Input Validation</h3>
+  <p>All API endpoints validate required fields and return appropriate HTTP status codes with descriptive error messages:</p>
+  <table>
+    <tr><th>HTTP Code</th><th>Meaning</th><th>Example</th></tr>
+    <tr><td>400</td><td>Bad Request</td><td>Missing required field</td></tr>
+    <tr><td>401</td><td>Unauthorized</td><td>Wrong password</td></tr>
+    <tr><td>403</td><td>Forbidden</td><td>Student trying to POST</td></tr>
+    <tr><td>404</td><td>Not Found</td><td>Record ID not found</td></tr>
+    <tr><td>409</td><td>Conflict</td><td>Email already registered</td></tr>
+    <tr><td>500</td><td>Server Error</td><td>DynamoDB connection issue</td></tr>
+  </table>
+
+  <h3>11.7 Session Management</h3>
+  <p>User sessions are stored in browser <code>sessionStorage</code> (not localStorage) so they are automatically cleared when the browser tab is closed. Logout explicitly calls <code>sessionStorage.clear()</code> and redirects to the login page using <code>window.location.replace()</code> to prevent back-button access.</p>
+  <div class="page-num">12</div>
+</div>
+
+<!-- PAGE 13 — SCREENSHOTS: LOGIN PAGE -->
+<div class="page">
+  <h2>Chapter 12: Screenshots — Login &amp; Registration Page</h2>
+  <p>The login and registration page (<code>index.html</code>) features a luxury dark theme with animated gradient background orbs, gold branding, and a clean card-based layout.</p>
+
+  <h3>12.1 Sign In Screen</h3>
+  <div class="screenshot-box" id="box-1" onclick="document.getElementById('inp-1').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-1" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Sign In page — EduPrime login screen</div>
+  </div>
+  <p><strong>Description:</strong> The Sign In screen shows the EduPrime logo with gold gradient text, a mode toggle (Sign In / Register), role selector cards for Student and Teacher, email and password input fields, and a gold gradient submit button.</p>
+
+  <h3>12.2 Student Registration Screen</h3>
+  <div class="screenshot-box" id="box-2" onclick="document.getElementById('inp-2').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-2" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Register tab — Student role selected with department dropdown</div>
+  </div>
+  <p><strong>Description:</strong> When Register tab is selected and Student role is chosen, additional fields appear: Full Name, Confirm Password, and a Department dropdown with all 11 department options (CSE, ECE, IT, EEE, AIDS, AIML, MECH, CIVIL, CHEM, MBA, MCA).</p>
+
+  <h3>12.3 Teacher Registration Screen</h3>
+  <div class="screenshot-box" id="box-3" onclick="document.getElementById('inp-3').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-3" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Register tab — Teacher role selected with Teacher Code and Department fields</div>
+  </div>
+  <p><strong>Description:</strong> When Teacher role is selected during registration, two additional fields appear: Teacher Code and Department dropdown. The Teacher role card is highlighted in gold/blue.</p>
+  <div class="page-num">13</div>
+</div>
+
+<!-- PAGE 14 — SCREENSHOTS: TEACHER PORTAL -->
+<div class="page">
+  <h2>Chapter 13: Screenshots — Teacher Portal</h2>
+  <p>The teacher portal (<code>teacher.html</code>) features a dark sidebar with gold EduPrime branding, department badge, and navigation to all management sections.</p>
+
+  <h3>13.1 Teacher Dashboard — Students Section with Join Requests</h3>
+  <div class="screenshot-box" id="box-4" onclick="document.getElementById('inp-4').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-4" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Teacher portal — Students tab with pending join requests and Accept/Reject buttons</div>
+  </div>
+  <p><strong>Description:</strong> The Students section shows a notification badge on the nav button indicating pending requests. A highlighted card shows pending join requests with student name, email, department badge, timestamp, and Accept/Reject buttons.</p>
+
+  <h3>13.2 Marks Management Section</h3>
+  <div class="screenshot-box" id="box-5" onclick="document.getElementById('inp-5').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-5" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Teacher portal — Marks section with add form and marks table</div>
+  </div>
+  <p><strong>Description:</strong> The Marks section shows a form to add/update marks with student name, department (auto-filled), and score fields. Below is a table showing all marks with grade badges (A/B/C/F) and delete buttons.</p>
+
+  <h3>13.3 Attendance Section</h3>
+  <div class="screenshot-box" id="box-6" onclick="document.getElementById('inp-6').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-6" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Teacher portal — Attendance section with date picker and status dropdown</div>
+  </div>
+  <p><strong>Description:</strong> The Attendance section provides a form with student name, date picker, and a status dropdown (Present/Absent/Late). The attendance table shows all records with color-coded status badges.</p>
+  <div class="page-num">14</div>
+</div>
+
+<!-- PAGE 15 — SCREENSHOTS: STUDENT PORTAL + CONCLUSION -->
+<div class="page">
+  <h2>Chapter 14: Screenshots — Student Portal</h2>
+  <p>The student portal (<code>student.html</code>) shows the join request waiting screen on first login, and the full dashboard after teacher approval.</p>
+
+  <h3>14.1 Join Request Waiting Screen</h3>
+  <div class="screenshot-box" id="box-7" onclick="document.getElementById('inp-7').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-7" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Student portal — Waiting for approval screen with department badge</div>
+  </div>
+  <p><strong>Description:</strong> After first login, the student sees a full-screen overlay with a waiting message, their department badge, and a note that the page updates automatically every 5 seconds when the teacher accepts.</p>
+
+  <h3>14.2 Student Dashboard — My Marks</h3>
+  <div class="screenshot-box" id="box-8" onclick="document.getElementById('inp-8').click()" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropFile(event,this)">
+    <input class="drop-input" type="file" id="inp-8" accept="image/*" onchange="fileChosen(event,this.closest('.screenshot-box'))"/>
+    <button class="remove-btn" onclick="removeImg(event,this.closest('.screenshot-box'))">✕ Remove</button>
+    <div class="ss-icon">�</div>
+    <div class="ss-label">Click or Drag &amp; Drop Screenshot Here</div>
+    <div class="ss-hint">Student portal — Dashboard with stats cards and marks table after acceptance</div>
+  </div>
+  <p><strong>Description:</strong> After acceptance, the student dashboard shows stat cards (Average Score, Highest Score, Lowest Score, Total Subjects) and a marks table filtered to show only this student's records. The sidebar shows Student ID, Department, and Mentor name.</p>
+
+  <h2>Chapter 15: Conclusion &amp; Future Scope</h2>
+  <h3>15.1 Conclusion</h3>
+  <p>EduPrime is a complete, production-ready Student Management System that successfully demonstrates the integration of modern web development, cloud computing, and DevOps practices. All stated objectives were achieved including role-based access control, department-based enrollment with teacher approval, secure JWT authentication, AWS DynamoDB integration, Terraform infrastructure provisioning, Docker containerization, and automated Jenkins CI/CD pipeline.</p>
+
+  <h3>15.2 Future Scope</h3>
+  <table>
+    <tr><th>Feature</th><th>Description</th></tr>
+    <tr><td>Email Notifications</td><td>Send email alerts to teachers on new join requests</td></tr>
+    <tr><td>Mobile App</td><td>React Native app for students to check records on mobile</td></tr>
+    <tr><td>Analytics Dashboard</td><td>Charts for attendance trends and mark distributions</td></tr>
+    <tr><td>Parent Portal</td><td>Separate portal for parents to view child's progress</td></tr>
+    <tr><td>HTTPS/SSL</td><td>SSL certificate using AWS Certificate Manager</td></tr>
+    <tr><td>Auto-scaling</td><td>AWS ECS for auto-scaling instead of single EC2</td></tr>
+  </table>
+
+  <h3>15.3 References</h3>
+  <ol>
+    <li>AWS DynamoDB Documentation — https://docs.aws.amazon.com/dynamodb</li>
+    <li>Terraform AWS Provider — https://registry.terraform.io/providers/hashicorp/aws</li>
+    <li>Jenkins Pipeline Documentation — https://www.jenkins.io/doc/book/pipeline</li>
+    <li>Docker Documentation — https://docs.docker.com</li>
+    <li>Express.js Documentation — https://expressjs.com</li>
+    <li>JSON Web Tokens — https://jwt.io</li>
+    <li>GitHub Repository — https://github.com/Pragadees-62/C27-Project</li>
+  </ol>
+  <p style="text-align:center;margin-top:30px;font-style:italic;color:#555;">
+    — End of Report —<br/>
+    EduPrime Student Management System | Pragadees M | April 2026
+  </p>
+  <div class="page-num">15</div>
+</div>
+
+<script>
+function dragOver(e, box) {
+  e.preventDefault();
+  box.classList.add('drag-over');
+}
+function dragLeave(box) {
+  box.classList.remove('drag-over');
+}
+function dropFile(e, box) {
+  e.preventDefault();
+  box.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file, box);
+}
+function fileChosen(e, box) {
+  const file = e.target.files[0];
+  if (file) loadImage(file, box);
+}
+function loadImage(file, box) {
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    // Remove old image if any
+    const old = box.querySelector('img.dropped');
+    if (old) old.remove();
+    // Hide placeholder content
+    box.querySelectorAll('.ss-icon,.ss-label,.ss-hint').forEach(el => el.style.display = 'none');
+    // Insert image
+    const img = document.createElement('img');
+    img.src = ev.target.result;
+    img.className = 'dropped';
+    img.style.width = '100%';
+    img.style.borderRadius = '6px';
+    img.style.display = 'block';
+    box.insertBefore(img, box.querySelector('.remove-btn').nextSibling);
+    box.classList.add('has-image');
+    box.style.cursor = 'default';
+    box.onclick = null;
+  };
+  reader.readAsDataURL(file);
+}
+function removeImg(e, box) {
+  e.stopPropagation();
+  const img = box.querySelector('img.dropped');
+  if (img) img.remove();
+  box.querySelectorAll('.ss-icon,.ss-label,.ss-hint').forEach(el => el.style.display = '');
+  box.classList.remove('has-image');
+  box.style.cursor = 'pointer';
+  const inp = box.querySelector('input');
+  if (inp) inp.value = '';
+  // Re-attach click
+  const id = box.id.replace('box-', '');
+  box.onclick = function() { document.getElementById('inp-' + id).click(); };
+}
+</script>
+</body>
+</html>

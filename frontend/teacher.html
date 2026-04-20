@@ -65,8 +65,8 @@
       </div>
 
       <!-- Pending join requests -->
-      <div id="join-requests-card" style="display:none;" class="card" style="border-left:4px solid #f6ad55;">
-        <h3 style="margin-bottom:14px;color:#744210;display:flex;align-items:center;gap:8px;">
+      <div id="join-requests-card" style="display:none;border-left:4px solid var(--gold);" class="card">
+        <h3 style="margin-bottom:14px;color:var(--gold);display:flex;align-items:center;gap:8px;">
           🔔 Pending Join Requests
           <span id="req-count" class="badge badge-yellow"></span>
         </h3>
@@ -408,18 +408,18 @@ async function loadJoinRequests() {
 
     list.innerHTML = pending.map(r => `
       <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:12px 0;border-bottom:1px solid #e2e8f0;gap:12px;flex-wrap:wrap;">
+                  padding:12px 0;border-bottom:1px solid var(--border2);gap:12px;flex-wrap:wrap;">
         <div>
-          <strong>${r.studentName}</strong>
-          <span style="color:#718096;font-size:0.82rem;margin-left:8px;">@${r.studentEmail}</span>
+          <strong style="color:var(--text);">${r.studentName}</strong>
+          <span style="color:var(--muted);font-size:0.82rem;margin-left:8px;">${r.studentEmail}</span>
           <span class="badge badge-blue" style="margin-left:8px;">${r.department}</span>
-          <div style="font-size:0.78rem;color:#a0aec0;margin-top:3px;">
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:3px;">
             Requested: ${new Date(r.requestedAt).toLocaleString()}
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-success btn-sm" onclick="handleJoinRequest(${r.id},'accept')">✅ Accept</button>
-          <button class="btn btn-danger  btn-sm" onclick="handleJoinRequest(${r.id},'reject')">❌ Reject</button>
+          <button class="btn btn-success btn-sm" onclick="handleJoinRequest('${r.id}','accept')">✅ Accept</button>
+          <button class="btn btn-danger  btn-sm" onclick="handleJoinRequest('${r.id}','reject')">❌ Reject</button>
         </div>
       </div>
     `).join("");
@@ -433,10 +433,11 @@ async function handleJoinRequest(id, action) {
     body: JSON.stringify({ action }),
   });
   if (res.ok) {
-    toast(action === "accept" ? "Student accepted! ✅" : "Request rejected.", action === "accept" ? "success" : "error");
+    toast(action === "accept" ? "✅ Student accepted and added to department!" : "❌ Request rejected, student account removed.", action === "accept" ? "success" : "error");
     loadStudents();
   } else {
-    toast("Action failed.", "error");
+    const err = await res.json().catch(() => ({}));
+    toast(err.error || "Action failed.", "error");
   }
 }
 
@@ -764,8 +765,12 @@ window.addEventListener("load", () => {
   document.getElementById("page-loader").classList.add("hidden");
 });
 
-// Resolve dept first, then load
-resolveTeacherDept().then(() => loadStudents());
+// Resolve dept first, then load students + start polling for new requests
+resolveTeacherDept().then(() => {
+  loadStudents();
+  // Poll for new join requests every 10 seconds
+  setInterval(() => loadJoinRequests(), 10000);
+});
 </script>
 
 </body>
