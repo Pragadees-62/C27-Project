@@ -43,13 +43,13 @@ pipeline {
             steps {
                 sh '''
                     echo "Waiting for backend to be ready..."
-                    sleep 25
+                    sleep 15
                     echo "--- Backend logs ---"
                     docker logs sms-backend --tail 30 || true
                     echo "--- Health check ---"
-                    curl -sf http://localhost:3000/api/teachers \
+                    curl -sf http://localhost:3000/health \
                         && echo "✅ Backend is healthy." \
-                        || echo "⚠️ Health check failed — check backend logs above."
+                        || { echo "❌ Health check failed — check backend logs above."; exit 1; }
                 '''
             }
         }

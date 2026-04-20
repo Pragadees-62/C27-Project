@@ -16,6 +16,9 @@ app.use(express.json());
 // ── Serve frontend static files ───────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
+// ── Health check (no DB dependency) ──────────────────────────────────────────
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api', require('./routes/apiRoutes'));
 
